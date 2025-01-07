@@ -23,7 +23,7 @@ jobs:
       # Pull the latest changes on the server
       - name: Deploy to Server
         run: |
-          ssh -o StrictHostKeyChecking=no your_user@your_server_ip << 'EOF'
+          ssh -o StrictHostKeyChecking=no sshuser@myairflow.ddns.net << 'EOF'
           cd /home/ignacio/airflow
           git pull origin prod
           EOF
