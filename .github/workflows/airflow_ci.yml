@@ -18,7 +18,7 @@ jobs:
         with:
           host: ${{ secrets.HOST }}  # Remote host IP or domain
           username: ${{ secrets.SSH_USER }}  # Remote SSH username
-          key: ${{ secrets.SSH_PRIVATE_KEY }}  # SSH private key (must be added in GitHub secrets)
+          key: ${{ secrets.SERVER_SSH_KEY }}  # SSH private key (must be added in GitHub secrets)
           port: 22  # Default SSH port, can be changed if needed
           script: |
             cd /path/to/your/project  # Change to your project directory on the server
