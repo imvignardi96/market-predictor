@@ -1,24 +1,26 @@
-name: Deploy to Server
+name: SSH Pull on Prod Push
 
 on:
   push:
     branches:
-      - main
+      - prod  # Trigger action on push to 'prod' branch
 
 jobs:
-  deploy:
+  ssh-pull:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout the repository
         uses: actions/checkout@v2
 
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass
+      - name: Set up SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}  # Remote host IP or domain
+          username: ${{ secrets.SSH_USER }}  # Remote SSH username
+          key: ${{ secrets.SSH_PRIVATE_KEY }}  # SSH private key (must be added in GitHub secrets)
+          port: 22  # Default SSH port, can be changed if needed
+          script: |
+            cd /path/to/your/project  # Change to your project directory on the server
+            git pull origin prod  # Perform a `git pull` from 'prod' branch
 
-      - name: SSH into the server and run a command
-        run: |
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no sshuser@myairflow.ddns.net 'echo "Password authentication successful"'
-          cd /home/ignacio/airflow
-          git pull origin prod
-          EOF
