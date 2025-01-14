@@ -36,7 +36,7 @@ def yfinance_dag():
         import pandas as pd
         
         # Fetch the tickers
-        ticker_data = connector.read_data('tickers', {'active':1}, 'id')
+        ticker_data = connector.read_data('tickers', {'active':1})
         active_tickers = ticker_data.to_dict(orient='records')
 
         return active_tickers
@@ -46,9 +46,7 @@ def yfinance_dag():
     )
     def get_news(ticker:dict, n_news:int):
         import yfinance as yf
-        
-        print(ticker)
-        
+
         # This will fetch news for the given ticker
         ticker_code = ticker['ticker']
         ticker_id = ticker['id']
