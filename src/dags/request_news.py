@@ -3,6 +3,10 @@ from airflow.decorators import task, dag
 from airflow.utils.dates import days_ago
 from airflow.exceptions import AirflowException, AirflowSkipException, AirflowFailException
 from airflow.models import Variable
+import sys
+import os
+sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+
 from utils.sqlconnector import SQLConnector
 
 
@@ -43,6 +47,8 @@ def yfinance_dag():
     def get_news(ticker:dict, n_news:int):
         import yfinance as yf
         
+        print(ticker)
+        
         # This will fetch news for the given ticker
         ticker_code = ticker['ticker']
         ticker_id = ticker['id']
@@ -75,3 +81,6 @@ def yfinance_dag():
 
 # Create the DAG instance
 yfinance_dag_instance = yfinance_dag()
+
+# if __name__=='__main__':
+#     yfinance_dag_instance.test()
