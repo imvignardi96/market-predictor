@@ -44,16 +44,10 @@ def yfinance_dag():
     )
     def get_news(ticker:dict, n_news:int):
         import yfinance as yf
-        
-        print(ticker)
-        print(n_news)
 
         # This will fetch news for the given ticker
         ticker_code = ticker['ticker']
         ticker_id = ticker['id']
-        
-        print(ticker_code)
-        print(ticker_id)
         
         ticker = yf.Ticker(ticker_code)
         news = ticker.get_news(count=n_news)
@@ -67,6 +61,8 @@ def yfinance_dag():
                 'article_date':pendulum.parse(new['content']['pubDate'])
             }
             news_list.append(dict)
+        
+        return news_list
 
     @task(
         doc_md='Esta tarea ingesta las noticias en la base de datos.'
