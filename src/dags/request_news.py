@@ -24,7 +24,7 @@ from utils.sqlconnector import SQLConnector
 def yfinance_dag():
     
     db_user = Variable.get('db_user')
-    db_pwd = Variable.get('db_pwd')
+    db_pwd = Variable.get('db_password')
     number_of_news = int(Variable.get('number_news', default_var=5))
                          
     connector = SQLConnector(username=db_user, password=db_pwd)
