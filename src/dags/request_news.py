@@ -33,8 +33,6 @@ def yfinance_dag():
         doc_md='Esta tarea obtiene los tickers necesarios para el scraping.'
     )
     def get_tickers():
-        import pandas as pd
-        
         # Fetch the tickers
         ticker_data = connector.read_data('tickers', {'active':1})
         active_tickers = ticker_data.to_dict(orient='records')
@@ -59,7 +57,7 @@ def yfinance_dag():
             dict = {
                 'id':new['id'],
                 'ticker_id':ticker_id,
-                'article_title':new['title'],
+                'article_title':new['content']['title'],
                 'article_date':pendulum.parse(new['pubDate'])
             }
             news_list.append(dict)
