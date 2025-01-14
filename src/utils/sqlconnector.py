@@ -21,9 +21,9 @@ class SQLConnector:
         self.metadata = sa.MetaData(bind=self.connection)
         self.metadata.reflect()  # Reflects existing tables in the database
     
-    def insert_data(self, table_name:str, data:list[dict]):
+    def insert_data(self, table_name: str, data: list[dict], prefix=''):
         """
-        Inserts data into the specified table.
+        Inserts data into the specified table, ignoring duplicates using INSERT IGNORE.
 
         :param table_name: Name of the table.
         :param data: List of dictionaries representing rows to insert.
@@ -32,8 +32,16 @@ class SQLConnector:
             raise ValueError(f"Table '{table_name}' does not exist in the database.")
         
         table = self.metadata.tables[table_name]
+        
         with self.connection.connect() as conn:
-            conn.execute(table.insert(), data)
+            # Create the insert statement
+            stmt = sa.insert(table).values(data)
+            
+            # Use prefix_with to add the 'IGNORE' keyword for MySQL
+            stmt = stmt.prefix_with(prefix)
+            
+            # Execute the query with the data
+            conn.execute(stmt)
     
     def read_data(self, table_name: str, conditions: dict = None, index_col: str = None) -> pd.DataFrame:
         """

@@ -108,7 +108,7 @@ def yfinance_dag():
         # Impact, hence it is better many executions but with low ammount of news
         for group_news in news_data:
             # Each position contains a list of dicts. Insert in batces of tickers
-            connector.insert_data('news', group_news)
+            connector.insert_data('news', group_news, prefix='IGNORE')
 
     # Workflow logic: Get tickers, fetch news, then ingest into DB
     tickers = get_tickers()
