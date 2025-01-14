@@ -21,7 +21,7 @@ class SQLConnector:
         self.metadata = sa.MetaData(bind=self.connection)
         self.metadata.reflect()  # Reflects existing tables in the database
     
-    def insert_data(self, table_name: str, data: list[dict]):
+    def insert_data(self, table_name: str, data: list[dict], prefix=''):
         """
         Inserts data into the specified table, ignoring duplicates using INSERT IGNORE.
 
@@ -35,10 +35,10 @@ class SQLConnector:
         
         with self.connection.connect() as conn:
             # Create the insert statement
-            stmt = insert(table).values(data)
+            stmt = sa.insert(table).values(data)
             
             # Use prefix_with to add the 'IGNORE' keyword for MySQL
-            stmt = stmt.prefix_with('IGNORE')
+            stmt = stmt.prefix_with(prefix)
             
             # Execute the query with the data
             conn.execute(stmt)
