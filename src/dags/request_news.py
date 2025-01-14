@@ -58,7 +58,7 @@ def yfinance_dag():
                 'id':new['id'],
                 'ticker_id':ticker_id,
                 'article_title':new['content']['title'],
-                'article_date':pendulum.parse(new['pubDate'])
+                'article_date':pendulum.parse(new['content']['pubDate'])
             }
             news_list.append(dict)
 
