@@ -2,6 +2,7 @@ import pendulum
 from airflow.decorators import task, dag
 from airflow.utils.dates import days_ago
 from airflow.exceptions import AirflowException, AirflowSkipException, AirflowFailException
+from airflow.models import Variable
 from utils.sqlconnector import SQLConnector
 
 
@@ -18,8 +19,10 @@ from utils.sqlconnector import SQLConnector
 )
 def yfinance_dag():
     
-    db_user = '{{ var.value.db_user }}'
-    db_pwd = '{{ var.value.db_pwd }}'
+    db_user = Variable.get('db_user')
+    db_pwd = Variable.get('db_pwd')
+    number_of_news = int(Variable.get('number_news', default_var=5))
+                         
     connector = SQLConnector(username=db_user, password=db_pwd)
 
     @task(
@@ -66,8 +69,6 @@ def yfinance_dag():
         print(news_data)
 
     # Workflow logic: Get tickers, fetch news, then ingest into DB
-    number_of_news = '{{ var.value.number_news }}'
-    
     tickers = get_tickers()
     news = get_news.partial(n_news=number_of_news).expand(ticker=tickers)
     insert_database(news)
