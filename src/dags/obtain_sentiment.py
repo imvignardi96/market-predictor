@@ -69,7 +69,7 @@ def sentiment_dag():
     def get_news():
         # Obtenemos las noticias
         required_columns = ['id', 'article_title']
-        news_data = connector.read_data('tickers', {'sentiment':None})
+        news_data = connector.read_data('news', {'sentiment':None})
         no_sentiment_news = news_data[required_columns].to_dict(orient='records')
 
         return no_sentiment_news
