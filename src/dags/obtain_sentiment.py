@@ -103,7 +103,7 @@ def sentiment_dag():
         logging.info('Modelo creado')
         
         # Creamos batches 
-        batched_articles = [no_sentiment_news[i:i + no_sentiment_news] for i in range(0, len(no_sentiment_news), batch_size)]
+        batched_articles = [no_sentiment_news[i:i + batch_size] for i in range(0, len(no_sentiment_news), batch_size)]
         
         # Procesar batches
         all_sentiment_news = []
