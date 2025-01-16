@@ -2,3 +2,4 @@
 __pycache__/
 *.log
 .old/
+utils/__pycache__/
