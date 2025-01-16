@@ -2,31 +2,8 @@ from utils.sqlconnector import SQLConnector
 from airflow.decorators import task, dag
 from airflow.exceptions import AirflowException, AirflowSkipException, AirflowFailException
 from airflow.models import Variable
-import numpy as np
 import pendulum
 import logging
-
-# Calcula el senntimiento en base a los logits
-def calculate_sentiment_score(logits):
-    # Apply softmax to logits to get probabilities
-    exp_logits = np.exp(logits)
-    probabilities = exp_logits / np.sum(exp_logits)
-    prob_positive, prob_negative, prob_neutral = probabilities
-
-    # Sentimiento como positivo - negativo. Neutral sin peso.
-    sentiment_score = prob_positive - prob_negative
-    return sentiment_score
-
-# Obtener los sentimientos y los logits asociados a cada output
-def analyze_sentiment_with_score(tokenizer, model, texts):
-    # Tokenize input text and get raw model outputs
-    inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
-    outputs = model(**inputs)
-
-    # Extraer los logits que identifican la probabilidad de pertenecer a una clase.
-    logits = outputs.logits.detach().numpy()
-    scores = [calculate_sentiment_score(logit) for logit in logits]
-    return scores
 
 # Dag
 @dag(
@@ -77,7 +54,8 @@ def sentiment_dag():
     @task(
         doc_md=
         """
-            Esta tarea obtiene el sentimiento de la noticias.
+            Esta tarea obtiene el sentimiento de la noticias. 
+            Utiliza la clase NlpModel, la cual es propia y proporciona una funcion para retornar los scores.
             
             -**Args**:
                 -no_sentiment_news: Task get_news que devuelve la lista de listas.
@@ -88,17 +66,14 @@ def sentiment_dag():
         """
     )
     def process_news(no_sentiment_news):
-        from transformers import BertTokenizer, BertForSequenceClassification
-        from transformers import pipeline
         from tqdm import tqdm
+        from utils.nlpmodel import NlpModel
         
         # Inicializamos variables
         batch_size = int(Variable.get('sentiment_batch_size'))
+        selected_model = Variable.get('model')
         
-        # Cargar FinBERT
-        model_name = "ProsusAI/finbert"  # FinBERT
-        tokenizer = BertTokenizer.from_pretrained(model_name)
-        model = BertForSequenceClassification.from_pretrained(model_name)
+        model = NlpModel(selected_model)
         
         logging.info('Modelo creado')
         
@@ -109,11 +84,11 @@ def sentiment_dag():
         all_sentiment_news = []
         for batch in tqdm(batched_articles, desc="Procesando Sentimiento"):
             titles = [article["article_title"] for article in batch] 
-            sentiment_scores = analyze_sentiment_with_score(tokenizer, model, titles)
+            sentiment_scores = model.analyze_sentiment_with_score(titles)
             
             # Incluir resultados
             for article, sentiment in zip(batch, sentiment_scores):
-                article["sentiment"] = sentiment.item()
+                article["sentiment"] = sentiment
 
             all_sentiment_news.append(article)
             
