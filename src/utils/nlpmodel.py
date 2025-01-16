@@ -59,6 +59,6 @@ class NlpModel:
 
         # Extraer los logits que identifican la probabilidad de pertenecer a una clase.
         logits = outputs.logits.detach().numpy()
-        scores = [self._calculate_sentiment_score(logit).item() for logit in logits]
+        scores = [round(self._calculate_sentiment_score(logit).item(), 3) for logit in logits]
         
         return scores

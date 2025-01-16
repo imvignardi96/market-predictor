@@ -13,21 +13,25 @@ class SQLConnector:
     password:str = '' 
     
     def __post_init__(self):
-        # Construct the connection URL
+        # Construye url
         self.url = f"{self.dialect}+{self.driver}://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
-        # Create the SQLAlchemy engine
+        # SQLAlchemy engine
         self.connection = sa.create_engine(self.url, echo=True)
-        # Initialize metadata
+        # Inicializar metadatos
         self.metadata = sa.MetaData(bind=self.connection)
         self.metadata.reflect()  # Reflects existing tables in the database
     
     def insert_data(self, table_name: str, data: list[dict], prefix=''):
         """
-        Inserts data into the specified table, ignoring duplicates using INSERT IGNORE.
+        Args:
+            table_name (str): Nombre de la tabla en la que se insertarán los datos.
+            data (list[dict]): Lista de diccionarios que representan las filas a insertar.
+            prefix (str, optional): Prefijo para la query. IGNORE para ignorar duplicados.
 
-        :param table_name: Name of the table.
-        :param data: List of dictionaries representing rows to insert.
+        Returns:
+            None
         """
+
         if table_name not in self.metadata.tables:
             raise ValueError(f"Table '{table_name}' does not exist in the database.")
         
@@ -43,39 +47,53 @@ class SQLConnector:
             # Execute the query with the data
             conn.execute(stmt)
             
-    def update_data(self, table_name: str, data: list[dict], conditions: dict = None):
+    def update_data(self, table_name: str, data: list[dict], condition: str, column_to_update:str) -> int:
         """
-        Inserts data into the specified table, ignoring duplicates using INSERT IGNORE.
+        Actualiza la tabla proporcionada de la base de datos usando las connndiciones
+        definidas en conditions.
 
-        :param table_name: Name of the table.
-        :param data: List of dictionaries representing rows to insert.
+        Args:
+            table_name (str): Nombre de la tabla
+            data (list[dict]): Lista de diccionarios con los valores a actualizar
+            conditions (dict): Condiciones a aplicar en clausula WHERE
+        
+        Returns:
+            rows_updated (int): Numero de filas actualizadas
         """
         if table_name not in self.metadata.tables:
             raise ValueError(f"La tabla '{table_name}' no existe en la base de datos.")
         
         table = self.metadata.tables[table_name]
+        rows_updated = 0
         
-        # Build the query
-        query = table.update()
-        if conditions:
-            for column, value in conditions.items():
-                query = query.where(table.c[column] == value)
-                
-        # Execute the query and fetch the results
+        # Conexiion y ejecucionn query
         with self.connection.connect() as conn:
-            result = conn.execute(query)
+            for row in data:
+                update_value = row[column_to_update]
+                
+                # Construccion query
+                query = table.update().values(update_value)
+                query = query.where(table.c[condition] == row[condition])
             
-        return result
+                # Ejecutar query
+                result = conn.execute(query)
+                rows_updated += result.rowcount  # Incrementar cuenta
+
+        return rows_updated
     
     def read_data(self, table_name: str, conditions: dict = None, index_col: str = None) -> pd.DataFrame:
         """
-        Reads data from the specified table with optional conditions and sets the index of the DataFrame.
+        Lee la tabla indicada de la base de datos.
+        
+        Args:
+            table_name (str): Nombre de la tabla desde la que se leerán los datos.
+            conditions (dict, optional): Diccionario de pares columna-valor para filtrar filas (opcional).
+            index_col (str, optional): Columna que se usará como índice del DataFrame (opcional).
 
-        :param table_name: Name of the table.
-        :param conditions: Dictionary of column-value pairs for filtering rows (optional).
-        :param index_col: Column to use as the index of the DataFrame (optional).
-        :return: Pandas DataFrame containing the filtered data.
+        Returns:
+            pandas.DataFrame: DataFrame de Pandas que contiene los datos filtrados.
         """
+
         if table_name not in self.metadata.tables:
             raise ValueError(f"Table '{table_name}' does not exist in the database.")
         

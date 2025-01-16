@@ -102,11 +102,11 @@ def sentiment_dag():
             Esta tarea actualiza el sentimiento de la noticias en la base de datos.
             
             -**Args**:
-                -senntimnt_news: Task process_news que devuelve las noticias y sus setimientos.
+                -sentimnt_news: Task process_news que devuelve las noticias y sus setimientos.
         """
     )
     def update_news(sentiment_news):
-        print(sentiment_news)
+        connector.update_data('news', sentiment_news, 'id', 'sentiment')
         
     get = get_news()
     process = process_news(get)
