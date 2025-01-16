@@ -113,8 +113,7 @@ def sentiment_dag():
             
             # Incluir resultados
             for article, sentiment in zip(batch, sentiment_scores):
-                article["label"] = sentiment["label"]
-                article["sentiment"] = sentiment["score"]
+                article["sentiment"] = sentiment
 
             all_sentiment_news.append(article)
             
