@@ -102,11 +102,6 @@ def sentiment_dag():
         
         logging.info('Modelo creado')
         
-        # Creacion pipeline analisis sentimient
-        sentiment_analyzer = pipeline("analisis-sentimiento", model=model, tokenizer=tokenizer)
-        
-        logging.info('Pipeline establecido')
-        
         # Creamos batches 
         batched_articles = [no_sentiment_news[i:i + no_sentiment_news] for i in range(0, len(no_sentiment_news), batch_size)]
         
@@ -114,7 +109,7 @@ def sentiment_dag():
         all_sentiment_news = []
         for batch in tqdm(batched_articles, desc="Procesando Sentimiento"):
             titles = [article["article_title"] for article in batch] 
-            sentiment_scores = analyze_sentiment_with_score(titles)
+            sentiment_scores = analyze_sentiment_with_score(tokenizer, model, titles)
             
             # Incluir resultados
             for article, sentiment in zip(batch, sentiment_scores):
