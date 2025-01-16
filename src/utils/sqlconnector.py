@@ -69,7 +69,7 @@ class SQLConnector:
         # Conexiion y ejecucionn query
         with self.connection.connect() as conn:
             for row in data:
-                update_value = row[column_to_update]
+                update_value = {column_to_update:row[column_to_update]}
                 
                 # Construccion query
                 query = table.update().values(update_value)
