@@ -20,6 +20,14 @@ class SQLConnector:
         # Inicializar metadatos
         self.metadata = sa.MetaData(bind=self.connection)
         self.metadata.reflect()  # Reflects existing tables in the database
+        
+    def _get_metadata(self, table_name:str):
+        if table_name not in self.metadata.tables:
+            raise ValueError(f"La tabla '{table_name}' no existe en la base de datos.")
+        
+        table = self.metadata.tables[table_name]
+        
+        return table
     
     def insert_data(self, table_name: str, data: list[dict], prefix=''):
         """
@@ -32,10 +40,7 @@ class SQLConnector:
             None
         """
 
-        if table_name not in self.metadata.tables:
-            raise ValueError(f"Table '{table_name}' does not exist in the database.")
-        
-        table = self.metadata.tables[table_name]
+        table = self._get_metadata(table_name)
         
         with self.connection.connect() as conn:
             # Create the insert statement
@@ -60,10 +65,8 @@ class SQLConnector:
         Returns:
             rows_updated (int): Numero de filas actualizadas
         """
-        if table_name not in self.metadata.tables:
-            raise ValueError(f"La tabla '{table_name}' no existe en la base de datos.")
+        table = self._get_metadata(table_name)
         
-        table = self.metadata.tables[table_name]
         rows_updated = 0
         
         # Conexiion y ejecucionn query
@@ -94,10 +97,7 @@ class SQLConnector:
             pandas.DataFrame: DataFrame de Pandas que contiene los datos filtrados.
         """
 
-        if table_name not in self.metadata.tables:
-            raise ValueError(f"Table '{table_name}' does not exist in the database.")
-        
-        table = self.metadata.tables[table_name]
+        table = self._get_metadata(table_name)
 
         # Build the query
         query = table.select()
@@ -115,7 +115,7 @@ class SQLConnector:
             if index_col in df.columns:
                 df.set_index(index_col, inplace=True)
             else:
-                raise ValueError(f"Column '{index_col}' does not exist in the table '{table_name}'.")
+                raise ValueError(f"Columna '{index_col}' no existe en '{table_name}'.")
 
         return df
 

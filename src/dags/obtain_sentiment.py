@@ -90,7 +90,7 @@ def sentiment_dag():
             for article, sentiment in zip(batch, sentiment_scores):
                 article["sentiment"] = sentiment
 
-            all_sentiment_news.append(article)
+                all_sentiment_news.append(article)
             
         logging.info('Análisis de sentimientos completado')
         
