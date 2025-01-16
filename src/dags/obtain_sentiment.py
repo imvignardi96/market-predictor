@@ -1,20 +1,42 @@
 from utils.sqlconnector import SQLConnector
+from airflow.decorators import task, dag
 from airflow.exceptions import AirflowException, AirflowSkipException, AirflowFailException
 from airflow.models import Variable
-import torch
+import numpy as np
 import pendulum
 import logging
-from airflow.decorators import task, dag
 
-# Define your DAG using the @dag decorator
+# Calcula el senntimiento en base a los logits
+def calculate_sentiment_score(logits):
+    # Apply softmax to logits to get probabilities
+    exp_logits = np.exp(logits)
+    probabilities = exp_logits / np.sum(exp_logits)
+    prob_positive, prob_negative, prob_neutral = probabilities
+
+    # Sentimiento como positivo - negativo. Neutral sin peso.
+    sentiment_score = prob_positive - prob_negative
+    return sentiment_score
+
+# Obtener los sentimientos y los logits asociados a cada output
+def analyze_sentiment_with_score(tokenizer, model, texts):
+    # Tokenize input text and get raw model outputs
+    inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
+    outputs = model(**inputs)
+
+    # Extraer los logits que identifican la probabilidad de pertenecer a una clase.
+    logits = outputs.logits.detach().numpy()
+    scores = [calculate_sentiment_score(logit) for logit in logits]
+    return scores
+
+# Dag
 @dag(
-    dag_id='yfinance_scrape',
-    description='DAG para obtener noticias de Yahoo Finance',
+    dag_id='sentiment_processor',
+    description='DAG para obtener los sentimientos de noticias',
     start_date=pendulum.datetime(2025, 1, 1, tz='UTC'),
     catchup=False,
-    max_active_tasks=16,
+    max_active_tasks=1,
     max_active_runs=1,
-    schedule_interval='*/10 * * * *',  # Every 10 minutes
+    schedule_interval='*/20 * * * *',  # Cada 20 mintos
     doc_md=
     """
         #### Documentacion Sentiment Analyzer.
@@ -45,7 +67,7 @@ def sentiment_dag():
         """
     )
     def get_news():
-        # Fetch the tickers
+        # Obtenemos las noticias
         required_columns = ['id', 'article_title']
         news_data = connector.read_data('tickers', {'sentiment':None})
         no_sentiment_news = news_data[required_columns].to_dict(orient='records')
@@ -74,7 +96,7 @@ def sentiment_dag():
         batch_size = Variable.get('sentiment_batch_size')
         
         # Cargar FinBERT
-        model_name = "ProsusAI/finbert"  # FinBERT for financial sentiment
+        model_name = "ProsusAI/finbert"  # FinBERT
         tokenizer = BertTokenizer.from_pretrained(model_name)
         model = BertForSequenceClassification.from_pretrained(model_name)
         
@@ -92,12 +114,12 @@ def sentiment_dag():
         all_sentiment_news = []
         for batch in tqdm(batched_articles, desc="Procesando Sentimiento"):
             titles = [article["article_title"] for article in batch] 
-            sentiments = sentiment_analyzer(titles)
+            sentiment_scores = analyze_sentiment_with_score(titles)
             
             # Incluir resultados
-            for article, sentiment in zip(batch, sentiments):
+            for article, sentiment in zip(batch, sentiment_scores):
                 article["label"] = sentiment["label"]
-                article["score"] = sentiment["score"]
+                article["sentiment"] = sentiment["score"]
 
             all_sentiment_news.append(article)
             
@@ -119,6 +141,6 @@ def sentiment_dag():
         
     get = get_news()
     process = process_news(get)
-    update = update_news(process)
+    update_news(process)
         
 dag_instance = sentiment_dag()
