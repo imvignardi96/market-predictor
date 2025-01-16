@@ -93,7 +93,7 @@ def sentiment_dag():
         from tqdm import tqdm
         
         # Inicializamos variables
-        batch_size = Variable.get('sentiment_batch_size')
+        batch_size = int(Variable.get('sentiment_batch_size'))
         
         # Cargar FinBERT
         model_name = "ProsusAI/finbert"  # FinBERT
