@@ -42,6 +42,30 @@ class SQLConnector:
             
             # Execute the query with the data
             conn.execute(stmt)
+            
+    def update_data(self, table_name: str, data: list[dict], conditions: dict = None):
+        """
+        Inserts data into the specified table, ignoring duplicates using INSERT IGNORE.
+
+        :param table_name: Name of the table.
+        :param data: List of dictionaries representing rows to insert.
+        """
+        if table_name not in self.metadata.tables:
+            raise ValueError(f"La tabla '{table_name}' no existe en la base de datos.")
+        
+        table = self.metadata.tables[table_name]
+        
+        # Build the query
+        query = table.update()
+        if conditions:
+            for column, value in conditions.items():
+                query = query.where(table.c[column] == value)
+                
+        # Execute the query and fetch the results
+        with self.connection.connect() as conn:
+            result = conn.execute(query)
+            
+        return result
     
     def read_data(self, table_name: str, conditions: dict = None, index_col: str = None) -> pd.DataFrame:
         """
