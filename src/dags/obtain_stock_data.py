@@ -123,11 +123,10 @@ def stock_data_dag():
         contract.currency = "USD"
         
         # Primero debemos obtener la fecha minima que se enncuentra en la bbdd para el ticker
-        query = f"SELECT MIN(value_at) FROM market_predictor.stock_daily_data WHERE ticker_id={ticker_id}"
+        query = f"SELECT MIN(value_at) FROM stock_daily_data WHERE ticker_id={ticker_id}"
         min_date = connector.custom_query(query)
         
         logging.info(f"Fecha minima de {ticker_code}: {min_date}")
-        sys.exit(1)
         
         # start_date = pendulum.from_format(Variable.get('data_start'), 'DD-MM-YYYY', tz='UTC')
         # end_date = pendulum.now().strftime('%Y%m%d %H:%M:%S')
