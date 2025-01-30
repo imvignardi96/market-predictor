@@ -123,7 +123,7 @@ def stock_data_dag():
         contract.currency = "USD"
         
         # Primero debemos obtener la fecha minima que se enncuentra en la bbdd para el ticker
-        query = f"SELECT MIN(value_at) FROM stock_daily_data WHERE ticker_id={ticker_id}"
+        query = f"SELECT MIN(value_at) FROM stock_data_daily WHERE ticker_id={ticker_id}"
         min_date = connector.custom_query(query)
         
         logging.info(f"Fecha minima de {ticker_code}: {min_date}")
