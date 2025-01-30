@@ -17,8 +17,6 @@ import time
 import uuid
 import logging
 
-
-
 class IBApi(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, self) 
@@ -48,7 +46,7 @@ class IBApi(EWrapper, EClient):
     catchup=False,
     max_active_tasks=1,
     max_active_runs=1,
-    schedule_interval='*/10 * * * *',  # Every 10 minutes
+    schedule_interval='30 23 * * *',  # At 23:30
     doc_md=
     """
         #### Documentacion Extractor datos stocks.
@@ -69,7 +67,7 @@ def stock_data_dag():
         app.run() 
     
     ib_host = Variable.get('ib_host')
-    ib_port = int(Variable.get(ib_port))
+    ib_port = int(Variable.get('ib_port'))
     
     app = IBApi()
     app.connect(ib_host, ib_port, 1)  # IB TWS debe ejecutarse. 1 es el clientId.
