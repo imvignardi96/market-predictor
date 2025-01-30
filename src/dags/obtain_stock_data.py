@@ -1,7 +1,6 @@
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.connection import Connection
-from ibapi.contract import Contract
 from ibapi.common import *  # @UnusedWildImport
 
 import pendulum
@@ -111,6 +110,8 @@ def stock_data_dag():
         """
     )
     def get_data(ticker:dict):
+        from ibapi.contract import Contract
+        
         # Obtener los valores de las columnas
         ticker_code = ticker['ticker']
         ticker_id = ticker['id']
@@ -128,40 +129,40 @@ def stock_data_dag():
         logging.info(f"Fecha minima de {ticker_code}: {min_date}")
         sys.exit(1)
         
-        start_date = pendulum.from_format(Variable.get('data_start'), 'DD-MM-YYYY', tz='UTC')
-        end_date = pendulum.now().strftime('%Y%m%d %H:%M:%S')
+        # start_date = pendulum.from_format(Variable.get('data_start'), 'DD-MM-YYYY', tz='UTC')
+        # end_date = pendulum.now().strftime('%Y%m%d %H:%M:%S')
 
-        # queryTime = (datetime.today() - timedelta(days=0)).strftime("%Y%m%d %H:%M:%S")
+        # # queryTime = (datetime.today() - timedelta(days=0)).strftime("%Y%m%d %H:%M:%S")
 
-        app.data_ready = False
-        execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
-        req_id = uuid.uuid4()
-        app.reqHistoricalData(req_id, contract, execution_date, "1 W", f"{timestep} mins", "TRADES", 1, 1, False, [])
+        # app.data_ready = False
+        # execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
+        # req_id = uuid.uuid4()
+        # app.reqHistoricalData(req_id, contract, execution_date, "1 W", f"{timestep} mins", "TRADES", 1, 1, False, [])
 
-        # Wait until data is ready
-        while depth > 0:
-            if app.data_ready:
-                start_date = start_date-timedelta(weeks=1)
-                print(start_date)
-                print(depth)
-                execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
-                req_id = req_id+1
+        # # Wait until data is ready
+        # while depth > 0:
+        #     if app.data_ready:
+        #         start_date = start_date-timedelta(weeks=1)
+        #         print(start_date)
+        #         print(depth)
+        #         execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
+        #         req_id = req_id+1
                 
-                app.reqHistoricalData(req_id, contract, execution_date, "1 W", f"{timestep} mins", "TRADES", 1, 1, False, [])
+        #         app.reqHistoricalData(req_id, contract, execution_date, "1 W", f"{timestep} mins", "TRADES", 1, 1, False, [])
                 
-                app.data_ready = False
-                depth = depth - 1
-        time.sleep(1)
+        #         app.data_ready = False
+        #         depth = depth - 1
+        # time.sleep(1)
 
-        # Convert historical data to DataFrame
-        df = pd.DataFrame(app.historical_data)
+        # # Convert historical data to DataFrame
+        # df = pd.DataFrame(app.historical_data)
 
-        app.disconnect()
+        # app.disconnect()
 
-        df['Date'] = pd.to_datetime(df['Date'], format='%Y%m%d %H:%M:%S %Z')
-        df.index = df['Date']
-        df.drop(['Date'], axis =1, inplace=True)
-        df.sort_index(ascending=False, inplace=True)
+        # df['Date'] = pd.to_datetime(df['Date'], format='%Y%m%d %H:%M:%S %Z')
+        # df.index = df['Date']
+        # df.drop(['Date'], axis =1, inplace=True)
+        # df.sort_index(ascending=False, inplace=True)
 
         # df.to_csv(f'{ticker}_{timestep}.csv', sep=';')
         
