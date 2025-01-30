@@ -118,4 +118,27 @@ class SQLConnector:
                 raise ValueError(f"Columna '{index_col}' no existe en '{table_name}'.")
 
         return df
+    
+    def custom_query(self, query:str) -> pd.DataFrame:
+        """
+        Ejecuta unna query customizada en lenguaje MySQL.
+
+        Args:
+            query (str): Query a ejecutar. Se connvierte a formato text.
+
+        Raises:
+            ValueError: Error en caso de query en formato differente a Str
+
+        Returns:
+            DataFrame: dataframe con los datos requeridos
+        """
+        
+        custom_query = sa.text(query)
+        # Execute the query and fetch the results
+        with self.connection.connect() as conn:
+            result = conn.execute(query)
+            df = pd.DataFrame(result.fetchall(), columns=result.keys())
+
+        return df
+        
 
