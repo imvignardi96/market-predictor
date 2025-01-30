@@ -166,7 +166,7 @@ def stock_data_dag():
         # df.to_csv(f'{ticker}_{timestep}.csv', sep=';')
         
     tickers = get_tickers()
-    get_data.expand(tickers)
+    get_data.expand(ticker=tickers)
 
 # Create the DAG instance
 stock_data_instance = stock_data_dag()
