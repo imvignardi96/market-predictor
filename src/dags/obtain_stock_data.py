@@ -120,7 +120,8 @@ def stock_data_dag():
             app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
             
             logging.info(f"Estado 2 del flag: {app.data_ready_event.is_set()}")
-            app.data_ready_event.wait()
+            # app.data_ready_event.wait()
+            time.sleep(5)
             
             logging.info("Datos obtenidos correctamente, recalculando fechas.")
             
