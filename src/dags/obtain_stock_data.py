@@ -1,8 +1,4 @@
-from ibapi.client import EClient
-from ibapi.wrapper import EWrapper
-from ibapi.connection import Connection
-from ibapi.common import *  # @UnusedWildImport
-
+from utils.ibconnector import IBApi
 import pendulum
 from airflow.decorators import task, dag
 from airflow.models import Variable
@@ -10,39 +6,23 @@ from airflow.models import Variable
 from utils.sqlconnector import SQLConnector
 
 import pandas as pd
-import threading
-import time
 
 import uuid
-import logging
-
-class IBApi(EWrapper, EClient):
-    def __init__(self):
-        EClient.__init__(self, self) 
-
-        self.historical_data = []
-         
-    def historicalData(self, reqId: int, bar: BarData):
-        data = {
-            "value_at": bar.date,
-            "opening_price": bar.open,
-            "high_price": bar.high,
-            "low_price": bar.low,
-            "closing_price": bar.close,
-            "volume": bar.volume
-        }
-        self.historical_data.append(data)
+import logging 
         
-    def historicalDataEnd(self, reqId: int, start: str, end: str):
-        logging.info(f"Datos historicos obtenidos. Req: {reqId}, Start: {start}, End: {end}")
-        self.data_ready = True  # Set flag when data retrieval is complete   
+ib_host = Variable.get('ib_host')
+ib_port = int(Variable.get('ib_port'))
+
+app = IBApi()
+
+app.connect_ib(ib_host, ib_port)
     
 @dag(
     dag_id='stock_data_extraction',
     description='DAG para obtener datos de la plataforma TWS de IB',
     start_date=pendulum.datetime(2025, 1, 1, tz='UTC'),
     catchup=False,
-    max_active_tasks=1,
+    max_active_tasks=5,
     max_active_runs=1,
     schedule_interval='30 23 * * *',  # At 23:30
     doc_md=
@@ -61,23 +41,6 @@ class IBApi(EWrapper, EClient):
     """
 )
 def stock_data_dag():
-    def run_loop():
-        app.run() 
-    
-    ib_host = Variable.get('ib_host')
-    ib_port = int(Variable.get('ib_port'))
-    
-    app = IBApi()
-    app.connect(ib_host, ib_port, 1)  # IB TWS debe ejecutarse. 1 es el clientId.
-    
-    # timestep = 30
-
-    # Debido a que es una API asincrona, mantiene la conexion en ejecucion
-    api_thread = threading.Thread(target=run_loop, daemon=True)
-    api_thread.start()
-
-    time.sleep(1)  # Intervalo para permitir conexion
-    
     db_user = Variable.get('db_user')
     db_pwd = Variable.get('db_password')
                          
@@ -110,6 +73,12 @@ def stock_data_dag():
     )
     def get_data(ticker:dict):
         from ibapi.contract import Contract
+        
+        if not app.isConnected():
+            logging.error("IB API no conectada")
+            return
+        
+        logging.info("IB API conectada, obteniendo datos...")
         
         # Obtener los valores de las columnas
         ticker_code = ticker['ticker']
