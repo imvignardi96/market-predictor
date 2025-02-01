@@ -121,6 +121,8 @@ def stock_data_dag():
                 
                 app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
                 
+                app.data_ready_event.wait()
+                
                 diff = start_date.diff(end_date).in_days()
                 if diff>=7:
                     start_date = start_date-pendulum.duration(weeks=1)
