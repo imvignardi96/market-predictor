@@ -21,6 +21,7 @@ class IBApi(EWrapper, EClient):
             self.historical_data = []
             self.next_valid_id_event = threading.Event()
             self.data_ready_event = threading.Event()
+            self.data_ready_event.set()
             self.__initialized = True
             
     def nextValidId(self, orderId: int):
