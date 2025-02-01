@@ -7,8 +7,8 @@ from utils.sqlconnector import SQLConnector
 
 import pandas as pd
 
-import uuid
 import logging 
+import random
         
 ib_host = Variable.get('ib_host')
 ib_port = int(Variable.get('ib_port'))
@@ -107,9 +107,11 @@ def stock_data_dag():
             end_date = pendulum.from_format(min_date_value, 'YYYY-MM-DD', tz='UTC')
             n_points = f'{start_date.diff(end_date).in_days()} D'
 
+        # Inicializacion de variables necesarias. el ID no puede ser UUID, debe ser un entero.
         app.data_ready = True
         execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
-        req_id = uuid.uuid4()
+        count = 0
+        req_id = f"{ticker_id}{count}"
         ib_granularity = Variable.get('ib_granularity')
         
         logging.info("Parametros establecidos.")
@@ -136,7 +138,8 @@ def stock_data_dag():
                     
                 execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
                 
-                req_id = uuid.uuid4()
+                count += 1
+                req_id = f"{ticker_id}{count}"
 
         # Convert historical data to DataFrame
         df = pd.DataFrame(app.historical_data)
