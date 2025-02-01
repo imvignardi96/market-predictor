@@ -17,6 +17,7 @@ class IBApi(EWrapper, EClient):
     def __init__(self):
         if not self.__initialized:
             EClient.__init__(self, self)
+            self.historical_data = []
             self.__initialized = True
             
     def connect_ib(self, host, port):
