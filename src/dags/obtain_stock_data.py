@@ -74,10 +74,6 @@ def stock_data_dag():
     def get_data(ticker:dict):
         from ibapi.contract import Contract
         
-        if not app.isConnected():
-            logging.error("IB API no conectada")
-            return
-        
         logging.info("IB API conectada, obteniendo datos...")
         
         # Obtener los valores de las columnas
