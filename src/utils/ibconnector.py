@@ -19,8 +19,8 @@ class IBApi(EWrapper, EClient):
         if not self.__initialized:
             EClient.__init__(self, self)
             self.historical_data = []
-            self.data_ready = False
             self.next_valid_id_event = threading.Event()
+            self.data_ready_event = threading.Event()
             self.__initialized = True
             
     def nextValidId(self, orderId: int):
@@ -44,6 +44,7 @@ class IBApi(EWrapper, EClient):
                 return False  # Connection failed
             
             logging.info("Conectado a Interactive Brokers!")
+            self.data_ready_event.set()
             return True
          
     def historicalData(self, reqId: int, bar: BarData):
@@ -59,4 +60,4 @@ class IBApi(EWrapper, EClient):
         
     def historicalDataEnd(self, reqId: int, start: str, end: str):
         logging.info(f"Datos historicos obtenidos. Req: {reqId}, Start: {start}, End: {end}")
-        self.data_ready = True  # Set flag when data retrieval is complete  
+        self.data_ready_event.set()  # Datos listos. Permite proxima ejecucion
