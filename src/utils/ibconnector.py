@@ -60,4 +60,3 @@ class IBApi(EWrapper, EClient):
     def historicalDataEnd(self, reqId: int, start: str, end: str):
         logging.info(f"Datos historicos obtenidos. Req: {reqId}, Start: {start}, End: {end}")
         self.data_ready_event.set()  # Datos listos. Permite proxima ejecucion
-        logging.info(f"Estado 3 del flag: {self.data_ready_event.is_set()}")
