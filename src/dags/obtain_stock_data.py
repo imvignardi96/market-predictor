@@ -24,23 +24,22 @@ class IBApi(EWrapper, EClient):
          
     def historicalData(self, reqId: int, bar: BarData):
         data = {
-            "Date": bar.date,
-            "Open": bar.open,
-            "High": bar.high,
-            "Low": bar.low,
-            "Close": bar.close,
-            "Volume": bar.volume
+            "value_at": bar.date,
+            "opening_price": bar.open,
+            "high_price": bar.high,
+            "low_price": bar.low,
+            "closing_price": bar.close,
+            "volume": bar.volume
         }
-        # print(bar.date)
         self.historical_data.append(data)
         
     def historicalDataEnd(self, reqId: int, start: str, end: str):
-        print("Historical data retrieval completed")
+        logging.info(f"Datos historicos obtenidos. Req: {reqId}, Start: {start}, End: {end}")
         self.data_ready = True  # Set flag when data retrieval is complete   
     
 @dag(
     dag_id='stock_data_extraction',
-    description='DAG para obtener noticias de Yahoo Finance',
+    description='DAG para obtener datos de la plataforma TWS de IB',
     start_date=pendulum.datetime(2025, 1, 1, tz='UTC'),
     catchup=False,
     max_active_tasks=1,
@@ -164,11 +163,13 @@ def stock_data_dag():
 
         # Convert historical data to DataFrame
         df = pd.DataFrame(app.historical_data)
+        
+        print(df)
 
-        df['Date'] = pd.to_datetime(df['Date'], format='%Y%m%d %H:%M:%S %Z')
-        df.index = df['Date']
-        df.drop(['Date'], axis =1, inplace=True)
-        df.sort_index(ascending=False, inplace=True)
+        df['value_at'] = pd.to_datetime(df['value_at'], format='%Y%m%d %H:%M:%S %Z')
+        # df.index = df['Date']
+        # df.drop(['Date'], axis =1, inplace=True)
+        # df.sort_index(ascending=False, inplace=True)
         
         print(df)
         
