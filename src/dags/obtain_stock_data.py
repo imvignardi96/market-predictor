@@ -112,11 +112,18 @@ def stock_data_dag():
         req_id = uuid.uuid4()
         ib_granularity = Variable.get('ib_granularity')
         
+        logging.info("Parametros establecidos.")
+        
         # app.reqHistoricalData(req_id, contract, start_date, "1 W", f"{ib_granularity}", "TRADES", 1, 1, False, [])
 
         # Wait until data is ready
         while start_date > end_date:
             if app.data_ready:
+                logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
+                logging.info(f"Id del request: {req_id}")
+                
+                app.data_ready = False
+                
                 app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
                 
                 diff = start_date.diff(end_date).in_days()
@@ -130,11 +137,11 @@ def stock_data_dag():
                 execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
                 
                 req_id = uuid.uuid4()
-                
-                app.data_ready = False
 
         # Convert historical data to DataFrame
         df = pd.DataFrame(app.historical_data)
+        
+        logging.info(f"Dataframe creado")
         
         print(df)
 
