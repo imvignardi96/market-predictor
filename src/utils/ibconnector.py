@@ -44,7 +44,6 @@ class IBApi(EWrapper, EClient):
                 return False  # Connection failed
             
             logging.info("Conectado a Interactive Brokers!")
-            self.data_ready_event.set()
             return True
          
     def historicalData(self, reqId: int, bar: BarData):
