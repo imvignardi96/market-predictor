@@ -90,9 +90,9 @@ def stock_data_dag():
         query = f"SELECT MIN(value_at) FROM stock_data_daily WHERE ticker_id={ticker_id}"
         min_date = connector.custom_query(query)
         
-        logging.info(f"Fecha minima de {ticker_code}: {min_date}")
-        
         min_date_value = min_date.iloc[0, 0]
+        
+        logging.info(f"Fecha minima de {ticker_code}: {min_date_value}")
         
         start_date = pendulum.now(tz='utc')
         
@@ -116,11 +116,13 @@ def stock_data_dag():
             logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
             logging.info(f"Id del request: {req_id}")
             
-            app.data_ready_event.clear()
-            
             app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
             
             app.data_ready_event.wait()
+            
+            app.data_ready_event.clear()
+            
+            logging.info("Datos obtenidos correctamente, recalculando fechas.")
             
             diff = start_date.diff(end_date).in_days()
             if diff>=7:
