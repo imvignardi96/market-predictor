@@ -3,6 +3,7 @@ from ibapi.wrapper import EWrapper
 from ibapi.connection import Connection
 from ibapi.common import * 
 import threading
+import logging
 
 class IBApi(EWrapper, EClient):
     instance = None  # Singleton instance
