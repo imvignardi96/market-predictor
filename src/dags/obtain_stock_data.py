@@ -94,7 +94,7 @@ def stock_data_dag():
         
         min_date_value = min_date.iloc[0, 0]
         
-        start_date = pendulum.now()
+        start_date = pendulum.now(tz='utc')
         
         if min_date_value is None:
             end_date = pendulum.from_format(Variable.get('data_start'), 'YYYY-MM-DD', tz='UTC')
@@ -105,7 +105,7 @@ def stock_data_dag():
 
         # Inicializacion de variables necesarias. el ID no puede ser UUID, debe ser un entero.
         app.data_ready = True
-        execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
+        execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
         count = 0
         req_id = f"{ticker_id}{count}"
         ib_granularity = Variable.get('ib_granularity')
@@ -130,7 +130,7 @@ def stock_data_dag():
                     start_date = start_date-pendulum.duration(days=diff)
                     n_points = f'{diff} D'
                     
-                execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
+                execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
                 
                 count += 1
                 req_id = f"{ticker_id}{count}"
