@@ -113,32 +113,30 @@ def stock_data_dag():
 
         # Wait until data is ready
         while start_date > end_date:
-            logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
-            logging.info(f"Id del request: {req_id}")
-            
-            logging.info(f"Estado 1 del flag: {app.data_ready_event.is_set()}")
-            app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
-            
-            logging.info(f"Estado 2 del flag: {app.data_ready_event.is_set()}")
-            # app.data_ready_event.wait()
-            time.sleep(5)
-            
-            logging.info("Datos obtenidos correctamente, recalculando fechas.")
-            
-            diff = start_date.diff(end_date).in_days()
-            if diff>=7:
-                start_date = start_date-pendulum.duration(weeks=1)
-                n_points = '1 W'
-            else:
-                start_date = start_date-pendulum.duration(days=diff)
-                n_points = f'{diff} D'
+            if app.data_ready_event.is_set():
+                logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
+                logging.info(f"Id del request: {req_id}")
                 
-            execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
-            
-            count += 1
-            req_id = f"{ticker_id}{count}"
-            
-            app.data_ready_event.clear()
+                app.data_ready_event.clear()
+                
+                app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
+
+                # time.sleep(1)
+                
+                logging.info("Datos obtenidos correctamente, recalculando fechas.")
+                
+                diff = start_date.diff(end_date).in_days()
+                if diff>=7:
+                    start_date = start_date-pendulum.duration(weeks=1)
+                    n_points = '1 W'
+                else:
+                    start_date = start_date-pendulum.duration(days=diff)
+                    n_points = f'{diff} D'
+                    
+                execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
+                
+                count += 1
+                req_id = f"{ticker_id}{count}"
 
         # Convert historical data to DataFrame
         df = pd.DataFrame(app.historical_data)
