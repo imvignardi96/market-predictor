@@ -116,11 +116,11 @@ def stock_data_dag():
             logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
             logging.info(f"Id del request: {req_id}")
             
+            logging.info(f"Estado 1 del flag: {app.data_ready_event.is_set()}")
             app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
             
+            logging.info(f"Estado 2 del flag: {app.data_ready_event.is_set()}")
             app.data_ready_event.wait()
-            
-            app.data_ready_event.clear()
             
             logging.info("Datos obtenidos correctamente, recalculando fechas.")
             
@@ -136,6 +136,8 @@ def stock_data_dag():
             
             count += 1
             req_id = f"{ticker_id}{count}"
+            
+            app.data_ready_event.clear()
 
         # Convert historical data to DataFrame
         df = pd.DataFrame(app.historical_data)
