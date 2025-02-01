@@ -3,6 +3,7 @@ from ibapi.wrapper import EWrapper
 from ibapi.connection import Connection
 from ibapi.common import * 
 import threading
+import time
 import logging
 
 class IBApi(EWrapper, EClient):
@@ -18,13 +19,32 @@ class IBApi(EWrapper, EClient):
         if not self.__initialized:
             EClient.__init__(self, self)
             self.historical_data = []
+            self.data_ready = False
+            self.next_valid_id_event = threading.Event()
             self.__initialized = True
+            
+    def nextValidId(self, orderId: int):
+        """
+            Siguiente orden valida. 
+            Cuando la conexion se completa o se ejecuta un comando se recibe esta respuesta.
+        """
+        logging.info(f"Received nextValidId: {orderId}")
+        self.next_valid_id_event.set()
             
     def connect_ib(self, host, port):
         if not self.isConnected():
             self.connect(host, port, 1)
             thread = threading.Thread(target=self.run, daemon=True)
             thread.start()
+
+            # Esperar proximo nextValidId
+            logging.info("Esperando nextValidId...")
+            if not self.next_valid_id_event.wait(timeout=5):  # 5 segundos
+                logging.error("Se produjo Timeout esperando nextValidId!")
+                return False  # Connection failed
+            
+            logging.info("Conectado a Interactive Brokers!")
+            return True
          
     def historicalData(self, reqId: int, bar: BarData):
         data = {
