@@ -52,8 +52,6 @@ contract.secType = "STK"
 contract.exchange = "SMART"
 contract.currency = "USD"
 
-queryTime = (datetime.today() - timedelta(days=0)).strftime("%Y%m%d %H:%M:%S")
-
 app.data_ready = False
 execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
 req_id = 1
