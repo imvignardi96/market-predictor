@@ -7,8 +7,8 @@ from utils.sqlconnector import SQLConnector
 
 import pandas as pd
 
-import uuid
 import logging 
+import random
         
 ib_host = Variable.get('ib_host')
 ib_port = int(Variable.get('ib_port'))
@@ -107,16 +107,25 @@ def stock_data_dag():
             end_date = pendulum.from_format(min_date_value, 'YYYY-MM-DD', tz='UTC')
             n_points = f'{start_date.diff(end_date).in_days()} D'
 
+        # Inicializacion de variables necesarias. el ID no puede ser UUID, debe ser un entero.
         app.data_ready = True
         execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
-        req_id = uuid.uuid4()
+        count = 0
+        req_id = f"{ticker_id}{count}"
         ib_granularity = Variable.get('ib_granularity')
+        
+        logging.info("Parametros establecidos.")
         
         # app.reqHistoricalData(req_id, contract, start_date, "1 W", f"{ib_granularity}", "TRADES", 1, 1, False, [])
 
         # Wait until data is ready
         while start_date > end_date:
             if app.data_ready:
+                logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
+                logging.info(f"Id del request: {req_id}")
+                
+                app.data_ready = False
+                
                 app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
                 
                 diff = start_date.diff(end_date).in_days()
@@ -129,12 +138,13 @@ def stock_data_dag():
                     
                 execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
                 
-                req_id = uuid.uuid4()
-                
-                app.data_ready = False
+                count += 1
+                req_id = f"{ticker_id}{count}"
 
         # Convert historical data to DataFrame
         df = pd.DataFrame(app.historical_data)
+        
+        logging.info(f"Dataframe creado")
         
         print(df)
 
