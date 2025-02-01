@@ -1,8 +1,4 @@
-from ibapi.client import EClient
-from ibapi.wrapper import EWrapper
-from ibapi.connection import Connection
-from ibapi.common import *  # @UnusedWildImport
-
+from utils.ibconnector import IBApi
 import pendulum
 from airflow.decorators import task, dag
 from airflow.models import Variable
@@ -10,56 +6,16 @@ from airflow.models import Variable
 from utils.sqlconnector import SQLConnector
 
 import pandas as pd
-import threading
-import time
 
 import uuid
-import logging
-
-class IBApi(EWrapper, EClient):
-    instance = None  # Singleton instance
-
-    def __new__(cls):
-        if cls.instance is None:
-            cls.instance = super(IBApi, cls).__new__(cls)
-            cls.instance.__initialized = False
-        return cls.instance
-
-    def __init__(self):
-        if not self.__initialized:
-            EClient.__init__(self, self)
-            self.__initialized = True
-            
-    def connect_ib(self, host, port):
-        if not self.isConnected():
-            self.connect(host, port, 1)
-            thread = threading.Thread(target=self.run, daemon=True)
-            thread.start()
-         
-    def historicalData(self, reqId: int, bar: BarData):
-        data = {
-            "value_at": bar.date,
-            "opening_price": bar.open,
-            "high_price": bar.high,
-            "low_price": bar.low,
-            "closing_price": bar.close,
-            "volume": bar.volume
-        }
-        self.historical_data.append(data)
-        
-    def historicalDataEnd(self, reqId: int, start: str, end: str):
-        logging.info(f"Datos historicos obtenidos. Req: {reqId}, Start: {start}, End: {end}")
-        self.data_ready = True  # Set flag when data retrieval is complete   
+import logging 
         
 ib_host = Variable.get('ib_host')
 ib_port = int(Variable.get('ib_port'))
 
 app = IBApi()
-try:
-    app.connect(ib_host, ib_port, 1)  # IB TWS debe ejecutarse. 1 es el clientId.
-    logging.info("Conectado a API de IB")
-except Exception as e:
-    logging.info("Fallo en la conexion de IB")  
+
+app.connect_ib(ib_host, ib_port)
     
 @dag(
     dag_id='stock_data_extraction',
