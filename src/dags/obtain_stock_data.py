@@ -113,28 +113,27 @@ def stock_data_dag():
 
         # Wait until data is ready
         while start_date > end_date:
-            if app.data_ready_event.is_set():
-                logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
-                logging.info(f"Id del request: {req_id}")
+            logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
+            logging.info(f"Id del request: {req_id}")
+            
+            app.data_ready_event.clear()
+            
+            app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
+            
+            app.data_ready_event.wait()
+            
+            diff = start_date.diff(end_date).in_days()
+            if diff>=7:
+                start_date = start_date-pendulum.duration(weeks=1)
+                n_points = '1 W'
+            else:
+                start_date = start_date-pendulum.duration(days=diff)
+                n_points = f'{diff} D'
                 
-                app.data_ready_event.clear()
-                
-                app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
-                
-                app.data_ready_event.wait()
-                
-                diff = start_date.diff(end_date).in_days()
-                if diff>=7:
-                    start_date = start_date-pendulum.duration(weeks=1)
-                    n_points = '1 W'
-                else:
-                    start_date = start_date-pendulum.duration(days=diff)
-                    n_points = f'{diff} D'
-                    
-                execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
-                
-                count += 1
-                req_id = f"{ticker_id}{count}"
+            execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
+            
+            count += 1
+            req_id = f"{ticker_id}{count}"
 
         # Convert historical data to DataFrame
         df = pd.DataFrame(app.historical_data)
