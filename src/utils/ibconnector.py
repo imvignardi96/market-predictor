@@ -31,9 +31,9 @@ class IBApi(EWrapper, EClient):
         logging.info(f"Received nextValidId: {orderId}")
         self.next_valid_id_event.set()
             
-    def connect_ib(self, host, port):
+    def connect_ib(self, host, port, client):
         if not self.isConnected():
-            self.connect(host, port, 1)
+            self.connect(host, port, client)
             thread = threading.Thread(target=self.run, daemon=True)
             thread.start()
 

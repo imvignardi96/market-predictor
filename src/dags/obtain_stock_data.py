@@ -13,10 +13,11 @@ import random
         
 ib_host = Variable.get('ib_host')
 ib_port = int(Variable.get('ib_port'))
+ib_client = int(Variable.get('ib_client'))
 
 app = IBApi()
 
-app.connect_ib(ib_host, ib_port)
+app.connect_ib(ib_host, ib_port, ib_client)
 
 time.sleep(5)
     
