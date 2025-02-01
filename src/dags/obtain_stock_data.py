@@ -8,6 +8,7 @@ from utils.sqlconnector import SQLConnector
 import pandas as pd
 
 import logging 
+import time
 import random
         
 ib_host = Variable.get('ib_host')
@@ -16,6 +17,8 @@ ib_port = int(Variable.get('ib_port'))
 app = IBApi()
 
 app.connect_ib(ib_host, ib_port)
+
+time.sleep(5)
     
 @dag(
     dag_id='stock_data_extraction',
@@ -73,8 +76,6 @@ def stock_data_dag():
     )
     def get_data(ticker:dict):
         from ibapi.contract import Contract
-        
-        logging.info("IB API conectada, obteniendo datos...")
         
         # Obtener los valores de las columnas
         ticker_code = ticker['ticker']
