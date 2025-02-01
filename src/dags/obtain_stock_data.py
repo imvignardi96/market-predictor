@@ -129,17 +129,20 @@ def stock_data_dag():
         
         min_date_value = min_date.iloc[0, 0]
         
+        start_date = pendulum.now()
+        
         if min_date_value is None:
             end_date = pendulum.from_format(Variable.get('data_start'), 'YYYY-MM-DD', tz='UTC')
+            n_points = '1 W'
         else:
             end_date = pendulum.from_format(min_date_value, 'YYYY-MM-DD', tz='UTC')
-            
-        start_date = pendulum.now()
+            n_points = f'{start_date.diff(end_date).in_days()} D'
 
         app.data_ready = True
         execution_date = start_date.strftime('%Y%m%d %H:%M:%S')
         req_id = uuid.uuid4()
         ib_granularity = Variable.get('ib_granularity')
+        
         # app.reqHistoricalData(req_id, contract, start_date, "1 W", f"{ib_granularity}", "TRADES", 1, 1, False, [])
 
         # Wait until data is ready
