@@ -137,21 +137,19 @@ def stock_data_dag():
                 count += 1
                 req_id = f"{ticker_id}{count}"
 
+        app.disconnect()
+        
         # Datos historiccos a dataframe
         df = pd.DataFrame(app.historical_data)
         
         logging.info(f"Dataframe creado")
-        
-        print(df)
 
-        df['value_at'] = pd.to_datetime(df['value_at'], format='%Y%m%d %H:%M:%S %Z')
-        # df.index = df['Date']
-        # df.drop(['Date'], axis =1, inplace=True)
-        # df.sort_index(ascending=False, inplace=True)
+        df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d', errors='coerce')
         
+        # Ingesta en BBDD
+        list_of_data = df.to_dict(orient='records')
         print(df)
-        
-        app.disconnect()
+        connector.insert_data('stock_data_daily', list_of_data, 'IGNORE')
         
     tickers = get_tickers()
     get_data.expand(ticker=tickers)
