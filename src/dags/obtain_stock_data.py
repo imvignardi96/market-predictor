@@ -95,13 +95,13 @@ def stock_data_dag():
         
         logging.info(f"Fecha minima de {ticker_code}: {min_date_value}")
         
-        start_date = pendulum.now(tz='utc')
+        start_date = pendulum.date()
         
         if min_date_value is None:
-            end_date = pendulum.from_format(Variable.get('data_start'), 'YYYY-MM-DD', tz='UTC')
+            end_date = pendulum.from_format(Variable.get('data_start'), 'YYYY-MM-DD', tz='UTC').date()
             n_points = '1 W'
         else:
-            end_date = pendulum.from_format(min_date_value, 'YYYY-MM-DD', tz='UTC')
+            end_date = pendulum.from_format(min_date_value, 'YYYY-MM-DD', tz='UTC').date()
             n_points = f'{start_date.diff(end_date).in_days()} D'
 
         # Inicializacion de variables necesarias. el ID no puede ser UUID, debe ser un entero.
@@ -113,7 +113,7 @@ def stock_data_dag():
         logging.info("Parametros establecidos.")
 
         # Bucle para obtener datos todas las fechas
-        while start_date.day > end_date.day:
+        while start_date > end_date:
             time.sleep(1)
             # Esperar a evento activo
             if app.data_ready_event.is_set():
