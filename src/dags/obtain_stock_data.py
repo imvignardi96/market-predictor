@@ -116,10 +116,7 @@ def stock_data_dag():
         while start_date > end_date:
             time.sleep(1)
             # Esperar a evento activo
-            if app.data_ready_event.is_set():
-                logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
-                logging.info(f"Id del request: {req_id}")
-                
+            if app.data_ready_event.is_set():                
                 diff = start_date.diff(end_date).in_days()
                 if diff>=7:
                     if not first_exec:
@@ -130,6 +127,9 @@ def stock_data_dag():
                 else:
                     start_date = start_date-pendulum.duration(days=diff)
                     n_points = f'{diff} D'
+                    
+                logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
+                logging.info(f"Id del request: {req_id}")
                 
                 app.data_ready_event.clear()
                 
@@ -148,6 +148,7 @@ def stock_data_dag():
         logging.info(f"Dataframe creado")
 
         df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d', errors='coerce')
+        df['ticker_id'] = ticker_id
         
         # Ingesta en BBDD
         list_of_data = df.to_dict(orient='records')
