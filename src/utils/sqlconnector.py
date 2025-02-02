@@ -58,7 +58,6 @@ class SQLConnector:
             # Execute the query with the data
             conn.execute(stmt)
             
-            conn.commit()
             
     def update_data(self, table_name: str, data: list[dict], condition: str, column_to_update:str) -> int:
         """
