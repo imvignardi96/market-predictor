@@ -113,6 +113,7 @@ def stock_data_dag():
         logging.info("Parametros establecidos.")
 
         # Bucle para obtener datos todas las fechas
+        first_exec = False
         while start_date > end_date:
             time.sleep(1)
             # Esperar a evento activo
@@ -120,17 +121,20 @@ def stock_data_dag():
                 logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
                 logging.info(f"Id del request: {req_id}")
                 
-                app.data_ready_event.clear()
-                
-                app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
-                
                 diff = start_date.diff(end_date).in_days()
                 if diff>=7:
-                    start_date = start_date-pendulum.duration(weeks=1)
-                    n_points = '1 W'
+                    if not first_exec:
+                        start_date = start_date-pendulum.duration(weeks=1)
+                        n_points = '1 W'
+                    else:
+                        first_exec = True
                 else:
                     start_date = start_date-pendulum.duration(days=diff)
                     n_points = f'{diff} D'
+                
+                app.data_ready_event.clear()
+                
+                app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
                     
                 execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
                 
