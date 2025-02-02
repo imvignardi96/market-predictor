@@ -102,7 +102,6 @@ def stock_data_dag():
             n_points = '1 W'
         else:
             end_date = pendulum.from_format(min_date_value, 'YYYY-MM-DD', tz='UTC').date()
-            n_points = f'{start_date.diff(end_date).in_days()} D'
 
         # Inicializacion de variables necesarias. el ID no puede ser UUID, debe ser un entero.
         execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
