@@ -15,7 +15,7 @@ import time
     description='DAG para obtener datos de la plataforma TWS de IB',
     start_date=pendulum.datetime(2025, 1, 1, tz='UTC'),
     catchup=False,
-    max_active_tasks=1,
+    max_active_tasks=3,
     max_active_runs=1,
     schedule_interval='30 23 * * *',  # At 23:30
     doc_md=
@@ -64,12 +64,14 @@ def stock_data_dag():
                 -active_tickers: Lista de diccionarios con los tickers activos.
         """
     )
-    def get_data(ticker:dict):
+    def get_data(ticker:dict, **kwargs):
         from ibapi.contract import Contract
+        
+        idx = int(kwargs['ti'].map_index)
         
         ib_host = Variable.get('ib_host')
         ib_port = int(Variable.get('ib_port'))
-        ib_client = int(Variable.get('ib_client'))
+        ib_client = int(Variable.get('ib_client'))+idx
 
         app = IBApi()
 
@@ -110,11 +112,10 @@ def stock_data_dag():
         
         logging.info("Parametros establecidos.")
 
-        # Wait until data is ready
-        while start_date > end_date:
+        # Bucle para obtener datos todas las fechas
+        while start_date.day > end_date.day:
             time.sleep(1)
-            print(app.data_ready_event.is_set())
-            print(app.data_ready)
+            # Esperar a evento activo
             if app.data_ready_event.is_set():
                 logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
                 logging.info(f"Id del request: {req_id}")
@@ -122,8 +123,6 @@ def stock_data_dag():
                 app.data_ready_event.clear()
                 
                 app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
-
-                logging.info("Datos obtenidos correctamente, recalculando fechas.")
                 
                 diff = start_date.diff(end_date).in_days()
                 if diff>=7:
@@ -138,7 +137,7 @@ def stock_data_dag():
                 count += 1
                 req_id = f"{ticker_id}{count}"
 
-        # Convert historical data to DataFrame
+        # Datos historiccos a dataframe
         df = pd.DataFrame(app.historical_data)
         
         logging.info(f"Dataframe creado")
@@ -152,7 +151,7 @@ def stock_data_dag():
         
         print(df)
         
-         # app.disconnect()
+        app.disconnect()
         
     tickers = get_tickers()
     get_data.expand(ticker=tickers)
