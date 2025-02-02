@@ -46,7 +46,7 @@ class IBApi(EWrapper, EClient):
             
             logging.info("Conectado a Interactive Brokers!")
             return True
-         
+        
     def historicalData(self, reqId: int, bar: BarData):
         data = {
             "value_at": bar.date,
