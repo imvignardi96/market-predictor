@@ -61,5 +61,4 @@ class IBApi(EWrapper, EClient):
         
     def historicalDataEnd(self, reqId: int, start: str, end: str):
         logging.info(f"Datos historicos obtenidos. Req: {reqId}, Start: {start}, End: {end}")
-        self.data_ready = True
         self.data_ready_event.set()  # Datos listos. Permite proxima ejecucion
