@@ -148,7 +148,7 @@ def stock_data_dag():
         
         # Ingesta en BBDD
         list_of_data = df.to_dict(orient='records')
-        print(df)
+        print(list_of_data)
         connector.insert_data('stock_data_daily', list_of_data, 'IGNORE')
         
     tickers = get_tickers()
