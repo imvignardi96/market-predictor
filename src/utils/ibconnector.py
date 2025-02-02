@@ -22,7 +22,6 @@ class IBApi(EWrapper, EClient):
             self.next_valid_id_event = threading.Event()
             self.data_ready_event = threading.Event()
             self.data_ready_event.set()
-            self.data_ready = False
             self.__initialized = True
             
     def nextValidId(self, orderId: int):
@@ -62,4 +61,3 @@ class IBApi(EWrapper, EClient):
     def historicalDataEnd(self, reqId: int, start: str, end: str):
         logging.info(f"Datos historicos obtenidos. Req: {reqId}, Start: {start}, End: {end}")
         self.data_ready_event.set()  # Datos listos. Permite proxima ejecucion
-        self.data_ready = True
