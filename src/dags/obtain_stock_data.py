@@ -113,6 +113,9 @@ def stock_data_dag():
 
         # Wait until data is ready
         while start_date > end_date:
+            time.sleep(1)
+            print(app.data_ready_event.is_set())
+            print(app.data_ready)
             if app.data_ready_event.is_set():
                 logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
                 logging.info(f"Id del request: {req_id}")
@@ -121,8 +124,6 @@ def stock_data_dag():
                 
                 app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
 
-                # time.sleep(1)
-                
                 logging.info("Datos obtenidos correctamente, recalculando fechas.")
                 
                 diff = start_date.diff(end_date).in_days()
