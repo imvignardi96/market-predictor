@@ -95,7 +95,7 @@ def stock_data_dag():
         
         logging.info(f"Fecha minima de {ticker_code}: {min_date_value}")
         
-        start_date = pendulum.date()
+        start_date = pendulum.now(tz='UTC').date()
         
         if min_date_value is None:
             end_date = pendulum.from_format(Variable.get('data_start'), 'YYYY-MM-DD', tz='UTC').date()
