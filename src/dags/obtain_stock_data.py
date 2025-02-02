@@ -113,7 +113,7 @@ def stock_data_dag():
         logging.info("Parametros establecidos.")
 
         # Bucle para obtener datos todas las fechas
-        first_exec = False
+        first_exec = True
         while start_date > end_date:
             time.sleep(1)
             # Esperar a evento activo
@@ -127,7 +127,7 @@ def stock_data_dag():
                         start_date = start_date-pendulum.duration(weeks=1)
                         n_points = '1 W'
                     else:
-                        first_exec = True
+                        first_exec = False
                 else:
                     start_date = start_date-pendulum.duration(days=diff)
                     n_points = f'{diff} D'
