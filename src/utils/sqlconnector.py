@@ -47,14 +47,22 @@ class SQLConnector:
             stmt = sa.insert(table).values(data)
             
             # Use prefix_with to add the 'IGNORE' keyword for MySQL
-            stmt = stmt.prefix_with(prefix)
+            if 'DUPLICATE' in prefix:
+                stmt = stmt.on_duplicate_key_update(
+                    data=stmt.inserted.data,
+                    status='U'
+                )
+            else:
+                stmt = stmt.prefix_with(prefix)
             
             # Execute the query with the data
             conn.execute(stmt)
             
+            conn.commit()
+            
     def update_data(self, table_name: str, data: list[dict], condition: str, column_to_update:str) -> int:
         """
-        Actualiza la tabla proporcionada de la base de datos usando las connndiciones
+        Actualiza la tabla proporcionada de la base de datos usando las condiciones
         definidas en conditions.
 
         Args:
