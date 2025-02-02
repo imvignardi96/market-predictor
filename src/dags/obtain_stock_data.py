@@ -9,15 +9,6 @@ import pandas as pd
 
 import logging 
 import time
-import random
-        
-ib_host = Variable.get('ib_host')
-ib_port = int(Variable.get('ib_port'))
-ib_client = int(Variable.get('ib_client'))
-
-app = IBApi()
-
-app.connect_ib(ib_host, ib_port, ib_client)
     
 @dag(
     dag_id='stock_data_extraction',
@@ -75,6 +66,14 @@ def stock_data_dag():
     )
     def get_data(ticker:dict):
         from ibapi.contract import Contract
+        
+        ib_host = Variable.get('ib_host')
+        ib_port = int(Variable.get('ib_port'))
+        ib_client = int(Variable.get('ib_client'))
+
+        app = IBApi()
+
+        app.connect_ib(ib_host, ib_port, ib_client)
         
         # Obtener los valores de las columnas
         ticker_code = ticker['ticker']
