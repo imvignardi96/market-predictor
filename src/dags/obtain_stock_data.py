@@ -211,7 +211,9 @@ def stock_data_dag():
         data = connector.custom_query(query)
         
         data = indicators.obtain_metrics(data)
-        logging.info(data)
+        list_of_data = data.to_dict(orient='records')
+        
+        connector.update_data('stock_data_daily', list_of_data, 'id', ['rsi', 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv'])
 
         logging.info(f"Datos a computar obtenidos")
         

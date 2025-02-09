@@ -59,7 +59,7 @@ class SQLConnector:
             conn.execute(stmt)
             
             
-    def update_data(self, table_name: str, data: list[dict], condition: str, column_to_update:str) -> int:
+    def update_data(self, table_name: str, data: list[dict], condition: str, columns_to_update:list[str]) -> int:
         """
         Actualiza la tabla proporcionada de la base de datos usando las condiciones
         definidas en conditions.
@@ -79,15 +79,13 @@ class SQLConnector:
         # Conexiion y ejecucionn query
         with self.connection.connect() as conn:
             for row in data:
-                update_value = {column_to_update:row[column_to_update]}
+                update_values = {col: row[col] for col in columns_to_update}
                 
-                # Construccion query
-                query = table.update().values(update_value)
-                query = query.where(table.c[condition] == row[condition])
-            
-                # Ejecutar query
-                result = conn.execute(query)
-                rows_updated += result.rowcount  # Incrementar cuenta
+                # Construcción de la consulta
+                query = table.update().where(table.c[condition] == row[condition]).values(update_values)
+                
+                # Ejecutar la consulta y actualizar el contador
+                rows_updated += conn.execute(query).rowcount
 
         return rows_updated
     
