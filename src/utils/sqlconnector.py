@@ -84,7 +84,6 @@ class SQLConnector:
                     col: (None if isinstance(row[col], float) and math.isnan(row[col]) else row[col])
                     for col in columns_to_update
                 }
-                update_values = {col: row[col] for col in columns_to_update}
                 
                 # Construcción de la consulta
                 query = table.update().where(table.c[condition] == row[condition]).values(update_values)
