@@ -148,8 +148,9 @@ def stock_data_dag():
         
         # Datos historiccos a dataframe
         df = pd.DataFrame(app.historical_data)
+        print(df)
         
-        if df is not None:
+        if df is not None and not df.empty:
             logging.info(f"Dataframe creado")
 
             df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d', errors='coerce')
