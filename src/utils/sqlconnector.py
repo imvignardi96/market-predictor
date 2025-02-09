@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 from dataclasses import dataclass
 import pandas as pd
+import math
 
 @dataclass
 class SQLConnector:
@@ -79,6 +80,10 @@ class SQLConnector:
         # Conexiion y ejecucionn query
         with self.connection.connect() as conn:
             for row in data:
+                update_values = {
+                    col: (None if isinstance(row[col], float) and math.isnan(row[col]) else row[col])
+                    for col in columns_to_update
+                }
                 update_values = {col: row[col] for col in columns_to_update}
                 
                 # Construcción de la consulta
