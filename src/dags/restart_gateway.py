@@ -9,7 +9,7 @@ import os
 
 # Define your DAG using the @dag decorator
 @dag(
-    dag_id='check_env',
+    dag_id='check_gateway',
     description='DAG para reinniciar servicio gateway',
     start_date=pendulum.datetime(2025, 1, 1, tz='UTC'),
     catchup=False,
@@ -37,7 +37,7 @@ import os
         2) Iniciar el software.
     """
 )
-def check_env_dag():
+def check_gateway_dag():
 
     @task(
         doc_md=
@@ -172,4 +172,4 @@ def check_env_dag():
 
 
 # Create the DAG instance
-check_env_instance = check_env_dag()
+check_gateway_instance = check_gateway_dag()
