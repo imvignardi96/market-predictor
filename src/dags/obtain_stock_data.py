@@ -91,7 +91,7 @@ def stock_data_dag():
         query = f"SELECT MAX(value_at) FROM stock_data_daily WHERE ticker_id={ticker_id}"
         max_date = connector.custom_query(query)
         
-        max_date_value = max_date.iloc[0, 0]
+        max_date_value = str(max_date.iloc[0, 0])
         
         logging.info(f"Fecha maxima de {ticker_code}: {max_date_value}")
         
