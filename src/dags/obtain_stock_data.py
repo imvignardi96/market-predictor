@@ -148,7 +148,6 @@ def stock_data_dag():
         
         # Datos historiccos a dataframe
         df = pd.DataFrame(app.historical_data)
-        print(df)
         
         if df is not None and not df.empty:
             logging.info(f"Dataframe creado")
@@ -197,16 +196,17 @@ def stock_data_dag():
         max_depth = max([rsi_period, aroon_period, macd_fast, macd_slow, macd_signal])
         
         query = f"""
-            SELECT * FROM (
-                SELECT 
-                    *,
-                    MIN(value_at) AS START_DATE
-                FROM stock_data_daily 
-                WHERE ticker_id={ticker_id}
-                    AND (rsi IS NULL OR aroon_up IS NULL OR macd IS NULL or obv IS NULL)
-                ORDER BY value_at DESC
-            ) AS A
-            WHERE value_at >= DATE_SUB(START_DATE, INTERVAL {max_depth} DAY);
+            SELECT 
+                *
+            FROM stock_data_daily
+            WHERE ticker_id = {ticker_id}
+                AND (rsi IS NULL OR aroon_up IS NULL OR macd IS NULL OR obv IS NULL)
+                AND value_at >= (
+                    SELECT DATE_SUB(MAX(value_at), INTERVAL {max_depth} DAY)
+                    FROM stock_data_daily
+                    WHERE ticker_id = {ticker_id}
+                )
+            ORDER BY value_at DESC;
         """
         data = connector.custom_query(query)
 
