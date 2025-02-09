@@ -209,13 +209,11 @@ def stock_data_dag():
             ORDER BY value_at DESC;
         """
         data = connector.custom_query(query)
+        
+        data = indicators.obtain_metrics(data)
+        logging.info(data)
 
         logging.info(f"Datos a computar obtenidos")
-        
-        logging.info(data)
-        logging.info(data.columns)
-        
-        
         
     tickers = get_tickers()
     get_prices = get_data.expand(ticker=tickers)
