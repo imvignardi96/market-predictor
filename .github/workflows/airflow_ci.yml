@@ -24,3 +24,14 @@ jobs:
             cd /home/ignacio/airflow/market-predictor
             git pull origin prod
 
+      - name: Reload requirements.txt
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}  # Remote host IP or domain
+          username: ${{ secrets.SSH_USER }}  # Remote SSH username
+          key: ${{ secrets.SERVER_SSH_KEY }}  # SSH private key (must be added in GitHub secrets)
+          port: 22  # Default SSH port, can be changed if needed
+          script: |
+            cd /home/ignacio/airflow/market-predictor
+            pip install -r requirements.txt
+
