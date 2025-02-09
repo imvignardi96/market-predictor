@@ -173,11 +173,11 @@ def stock_data_dag():
         from utils.compute import technicalIndicators
         
         # Parametros indicadores tecnicos
-        rsi_period:int = Variable.get('cp_rsi_period')
-        aroon_period:int = Variable.get('cp_aroon_period')
-        macd_fast:int = Variable.get('cp_macd_fast')
-        macd_slow:int = Variable.get('cp_macd_slow')
-        macd_signal:int = Variable.get('cp_macd_signal')
+        rsi_period = int(Variable.get('cp_rsi_period'))
+        aroon_period = int(Variable.get('cp_aroon_period'))
+        macd_fast = int(Variable.get('cp_macd_fast'))
+        macd_slow = int(Variable.get('cp_macd_slow'))
+        macd_signal = int(Variable.get('cp_macd_signal'))
         
         # Inicializamos la clase
         indicators = technicalIndicators(
