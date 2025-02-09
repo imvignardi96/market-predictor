@@ -2,6 +2,7 @@ from utils.ibconnector import IBApi
 import pendulum
 from airflow.decorators import task, dag
 from airflow.models import Variable
+from airflow.exceptions import AirflowSkipException
 
 from utils.sqlconnector import SQLConnector
 
@@ -46,7 +47,7 @@ def stock_data_dag():
             
             -**Returns**:
                 -active_tickers: Lista de diccionarios con los tickers activos.
-        """
+        """,
     )
     def get_tickers():
         # Fetch the tickers
@@ -62,7 +63,8 @@ def stock_data_dag():
             
             -**Returns**:
                 -active_tickers: Lista de diccionarios con los tickers activos.
-        """
+        """,
+        trigger_rule='all_success'
     )
     def get_data(ticker:dict, **kwargs):
         from ibapi.contract import Contract
@@ -147,20 +149,25 @@ def stock_data_dag():
         # Datos historiccos a dataframe
         df = pd.DataFrame(app.historical_data)
         
-        logging.info(f"Dataframe creado")
+        if df is not None:
+            logging.info(f"Dataframe creado")
 
-        df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d', errors='coerce')
-        df['ticker_id'] = ticker_id
-        
-        # Ingesta en BBDD
-        list_of_data = df.to_dict(orient='records')
-        connector.insert_data('stock_data_daily', list_of_data, 'IGNORE')
+            df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d', errors='coerce')
+            df['ticker_id'] = ticker_id
+            
+            # Ingesta en BBDD
+            list_of_data = df.to_dict(orient='records')
+            connector.insert_data('stock_data_daily', list_of_data, 'IGNORE')
+        else:
+            logging.info(f"Dataframe vacio. Fin de semana no se generan datos.")
+            raise AirflowSkipException
         
     @task(
         doc_md=
         """
             Esta tarea obtiene ciertos indicadores para cada ticker.
-        """
+        """,
+        trigger_rule='all_done'
     )
     def process_data(ticker:dict, **kwargs):
         from utils.compute import technicalIndicators
