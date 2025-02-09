@@ -88,20 +88,20 @@ def stock_data_dag():
         contract.currency = "USD"
         
         # Primero debemos obtener la fecha minima que se enncuentra en la bbdd para el ticker
-        query = f"SELECT MIN(value_at) FROM stock_data_daily WHERE ticker_id={ticker_id}"
-        min_date = connector.custom_query(query)
+        query = f"SELECT MAX(value_at) FROM stock_data_daily WHERE ticker_id={ticker_id}"
+        max_date = connector.custom_query(query)
         
-        min_date_value = min_date.iloc[0, 0]
+        max_date_value = max_date.iloc[0, 0]
         
-        logging.info(f"Fecha minima de {ticker_code}: {min_date_value}")
+        logging.info(f"Fecha maxima de {ticker_code}: {max_date_value}")
         
         start_date = pendulum.now(tz='UTC').date()
         
-        if min_date_value is None:
+        if max_date_value is None:
             end_date = pendulum.from_format(Variable.get('data_start'), 'YYYY-MM-DD', tz='UTC').date()
             n_points = '1 W'
         else:
-            end_date = pendulum.from_format(min_date_value, 'YYYY-MM-DD', tz='UTC').date()
+            end_date = pendulum.from_format(max_date_value, 'YYYY-MM-DD', tz='UTC').date()
 
         # Inicializacion de variables necesarias. el ID no puede ser UUID, debe ser un entero.
         execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
@@ -152,11 +152,66 @@ def stock_data_dag():
         
         # Ingesta en BBDD
         list_of_data = df.to_dict(orient='records')
-        print(list_of_data)
         connector.insert_data('stock_data_daily', list_of_data, 'IGNORE')
         
+    @task(
+        doc_md=
+        """
+            Esta tarea obtiene ciertos indicadores para cada ticker.
+        """
+    )
+    def process_data(ticker:dict, **kwargs):
+        from utils.compute import technicalIndicators
+        
+        # Parametros indicadores tecnicos
+        rsi_period:int = Variable.get('cp_rsi_period')
+        aroon_period:int = Variable.get('cp_aroon_period')
+        macd_fast:int = Variable.get('cp_macd_fast')
+        macd_slow:int = Variable.get('cp_macd_slow')
+        macd_signal:int = Variable.get('cp_macd_signal')
+        
+        # Inicializamos la clase
+        indicators = technicalIndicators(
+            rsi_period,
+            aroon_period,
+            macd_fast,
+            macd_slow,
+            macd_signal
+        )
+        
+        # Obtener los valores de las columnas
+        ticker_code = ticker['ticker']
+        ticker_id = ticker['id']
+        
+        # Obtener el mayor periodo para conocer la profundidad de los datos a extraer
+        max_depth = max([rsi_period, aroon_period, macd_fast, macd_slow, macd_signal])
+        
+        query = f"""
+            SELECT * FROM (
+                SELECT 
+                    *,
+                    MIN(value_at) AS START_DATE
+                FROM stock_data_daily 
+                WHERE ticker_id={ticker_id}
+                    AND (rsi IS NULL OR aroon_up IS NULL OR macd IS NULL or obv IS NULL)
+                ORDER BY value_at DESC
+            ) AS A
+            WHERE value_at >= DATE_SUB(START_DATE, INTERVAL {max_depth} DAY);
+        """
+        data = connector.custom_query(query)
+
+        logging.info(f"Datos a computar obtenidos")
+        
+        logging.info(data)
+        logging.info(data.columns)
+        
+        
+        
     tickers = get_tickers()
-    get_data.expand(ticker=tickers)
+    get_prices = get_data.expand(ticker=tickers)
+    get_indicators = process_data.expand(ticker=tickers)
+    
+    tickers >> get_prices >> get_indicators
 
 # Create the DAG instance
 stock_data_instance = stock_data_dag()
