@@ -106,7 +106,7 @@ def sentiment_dag():
         """
     )
     def update_news(sentiment_news):
-        connector.update_data('news', sentiment_news, 'id', 'sentiment')
+        connector.update_data('news', sentiment_news, 'id', ['sentiment'])
         
     get = get_news()
     process = process_news(get)
