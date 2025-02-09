@@ -2,9 +2,6 @@ import pendulum
 import logging
 from airflow.decorators import task, dag
 from airflow.exceptions import AirflowSkipException, AirflowFailException
-from airflow.models import Variable
-import sys
-import os
 
 
 # Define your DAG using the @dag decorator
@@ -86,6 +83,7 @@ def check_gateway_dag():
         import pyautogui  # If pyautogui works fine for your Linux setup
         import time
         import os
+        from airflow.models import Variable
         
         try:
             ib_user = Variable.get('ib_user_secret')
@@ -161,6 +159,7 @@ def check_gateway_dag():
             
         except Exception as e:
             logging.error(f'Fallo al iniciar IB Gateway: {str(e)}')
+            raise AirflowFailException
             
         logging.info('Login realizado')
         
