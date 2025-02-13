@@ -244,7 +244,7 @@ def train_model_dag():
             raise AirflowFailException
 
     tickers = get_tickers()
-    paths = get_data.expand(ticker=tickers)
-    generate_models.expand(file_path=paths)
+    dictionary = get_data.expand(ticker=tickers)
+    generate_models.expand(ticker_dict=dictionary)
     
 model_instance = train_model_dag()
