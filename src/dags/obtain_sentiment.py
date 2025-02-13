@@ -70,8 +70,8 @@ def sentiment_dag():
         from utils.nlpmodel import NlpModel
         
         # Inicializamos variables
-        batch_size = int(Variable.get('sentiment_batch_size'))
-        selected_model = Variable.get('model')
+        batch_size = int(Variable.get('nlp_sentiment_batch_size'))
+        selected_model = Variable.get('nlp_model')
         
         model = NlpModel(selected_model)
         
