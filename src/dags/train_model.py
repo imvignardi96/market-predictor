@@ -131,11 +131,13 @@ def train_model_dag():
             
             stock_data = pd.read_csv(file_path)
             
+            logging.info(f'Datos leidos: {stock_data.head(2)}')
+            
             stock_data.set_index('value_at', inplace=True)
             stock_data['target'] = stock_data['closing_price'] # Clonar columna. Esta se utilizara para y
             stock_data.dropna(inplace=True)
             
-            logging.info('Datos leidos')
+            logging.info(f'Pretratamiento realizado')
             
             #############################################################
             ######### A partir de aqui comienzan las iteraciones ########
