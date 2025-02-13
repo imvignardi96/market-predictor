@@ -148,7 +148,7 @@ def stock_data_dag():
 
         app.disconnect()
         
-        # Datos historiccos a dataframe
+        # Datos historicos a dataframe
         df = pd.DataFrame(app.historical_data)
         
         if df is not None and not df.empty:
