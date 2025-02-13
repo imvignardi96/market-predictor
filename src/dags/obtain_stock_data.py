@@ -100,7 +100,9 @@ def stock_data_dag():
         start_date = pendulum.now(tz='UTC').date()
         
         if max_date_value is None:
-            end_date = pendulum.from_format(Variable.get('data_start'), 'YYYY-MM-DD', tz='UTC').date()
+            data_start = Variable.get('data_start')
+            logging.info(f'Fecha a utilizar: {data_start}')
+            end_date = pendulum.from_format(data_start, 'YYYY-MM-DD', tz='UTC').date()
             n_points = '1 W'
         else:
             end_date = pendulum.from_format(max_date_value, 'YYYY-MM-DD', tz='UTC').date()
