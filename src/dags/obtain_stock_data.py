@@ -100,7 +100,7 @@ def stock_data_dag():
         start_date = pendulum.now(tz='UTC').date()
         
         if max_date_value in [None, 'None', '', 'nan', 'NaT'] or (isinstance(max_date_value, float) and pd.isna(max_date_value)):
-            data_start = Variable.get('data_start')
+            data_start = Variable.get('cp_data_start')
             logging.info(f'Fecha a utilizar: {data_start}')
             end_date = pendulum.from_format(data_start, 'YYYY-MM-DD', tz='UTC').date()
             n_points = '1 W'
