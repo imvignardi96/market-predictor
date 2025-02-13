@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy import and_
 from dataclasses import dataclass
 import pandas as pd
 import math
@@ -93,17 +94,20 @@ class SQLConnector:
 
         return rows_updated
     
+    from sqlalchemy import and_
+
     def read_data(self, table_name: str, conditions: dict = None, index_col: str = None) -> pd.DataFrame:
         """
-        Lee la tabla indicada de la base de datos.
-        
+        Reads data from the specified table in the database.
+
         Args:
-            table_name (str): Nombre de la tabla desde la que se leerán los datos.
-            conditions (dict, optional): Diccionario de pares columna-valor para filtrar filas (opcional).
-            index_col (str, optional): Columna que se usará como índice del DataFrame (opcional).
+            table_name (str): Name of the table to read data from.
+            conditions (dict, optional): Dictionary with column conditions. 
+                                        Supports tuples for operations, e.g., {"col": (">", value)}.
+            index_col (str, optional): Column to be used as DataFrame index.
 
         Returns:
-            pandas.DataFrame: DataFrame de Pandas que contiene los datos filtrados.
+            pandas.DataFrame: DataFrame with the filtered data.
         """
 
         table = self._get_metadata(table_name)
@@ -111,22 +115,43 @@ class SQLConnector:
         # Build the query
         query = table.select()
         if conditions:
-            for column, value in conditions.items():
-                query = query.where(table.c[column] == value)
+            filters = []
+            for column, condition in conditions.items():
+                if isinstance(condition, tuple) and len(condition) == 2:
+                    op, value = condition
+                    if op == "=":
+                        filters.append(table.c[column] == value)
+                    elif op == ">":
+                        filters.append(table.c[column] > value)
+                    elif op == "<":
+                        filters.append(table.c[column] < value)
+                    elif op == ">=":
+                        filters.append(table.c[column] >= value)
+                    elif op == "<=":
+                        filters.append(table.c[column] <= value)
+                    elif op == "!=":
+                        filters.append(table.c[column] != value)
+                    else:
+                        raise ValueError(f"Operacion no soportada: {op}")
+                else:  # Default to '=' if no operator is specified
+                    filters.append(table.c[column] == condition)
 
-        # Execute the query and fetch the results
+            query = query.where(and_(*filters))
+
+        # Execute the query and fetch results
         with self.connection.connect() as conn:
             result = conn.execute(query)
             df = pd.DataFrame(result.fetchall(), columns=result.keys())
-        
-        # Set the specified column as the index
+
+        # Set the index if needed
         if index_col:
             if index_col in df.columns:
                 df.set_index(index_col, inplace=True)
             else:
-                raise ValueError(f"Columna '{index_col}' no existe en '{table_name}'.")
+                raise ValueError(f"Columna '{index_col}' no existe '{table_name}'.")
 
         return df
+
     
     def custom_query(self, query:str) -> pd.DataFrame:
         """
