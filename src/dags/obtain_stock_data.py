@@ -205,7 +205,7 @@ def stock_data_dag():
             WHERE ticker_id = {ticker_id}
                 AND (rsi IS NULL OR aroon_up IS NULL OR macd IS NULL OR obv IS NULL)
                 AND value_at >= (
-                    SELECT DATE_SUB(MAX(value_at), INTERVAL {data_depth} MONTH)
+                    SELECT DATE_SUB(MAX(value_at), INTERVAL {data_depth}+1 MONTH)
                     FROM stock_data_daily
                     WHERE ticker_id = {ticker_id}
                 )
