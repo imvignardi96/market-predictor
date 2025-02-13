@@ -70,6 +70,7 @@ def train_model_dag():
         
         # Obtenemos las noticias
         stock_data = connector.read_data('stock_data_daily', {'value_at':('>=', data_depth), 'ticker_id':ticker_id})
+        logging.info(f'Datos extraidos: {stock_data.head(1)}')
         stock_data = stock_data['value_at', 'opening_price', 'closing_price', 'volume', 'rsi', 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv']
         
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
