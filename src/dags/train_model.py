@@ -75,7 +75,8 @@ def train_model_dag():
         stock_data = connector.read_data('stock_data_daily', {'value_at':('>=', data_depth), 'ticker_id':ticker_id})
         logging.info(f'Datos extraidos')
         
-        stock_data = stock_data[['value_at', 'opening_price', 'closing_price', 'volume', 'rsi', 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv']]
+        stock_data = stock_data[['value_at', 'opening_price', 'closing_price', 'volume', 'rsi', 
+                                 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv']]
         
         # Generamos un fichero temporal para poder usarlo los datos en otro task especifico
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
@@ -141,7 +142,7 @@ def train_model_dag():
             
             stock_data = pd.read_csv(file_path)
             
-            logging.info(f'Datos leidos: {stock_data.head(2)}')
+            logging.info(f'Datos leidos del archivo temporal: {file_path}')
             
             stock_data.set_index('value_at', inplace=True)
             stock_data['target'] = stock_data['closing_price'] # Clonar columna. Esta se utilizara para y
@@ -159,7 +160,13 @@ def train_model_dag():
             base_columns = ['closing_price', 'target']
             
             combination_columns = mm.generate_features(variable_columns)
+            
+            logging.info(f'Combinacion de features generada')
+            
             complexities = [initial_complexity // (2**i) for i in range(initial_complexity)]
+            
+            logging.info(f'Combinacion de complejidades generada')
+            
             count=1
             
             plotter = LSTMPlotter(rows=len(combination_columns), cols=len(complexities))
@@ -177,20 +184,24 @@ def train_model_dag():
 
                 df_scaled = mm.scale_dataframe(scaler, train_split, val_split, df, features)
                 
+                logging.info(f'Dataframe escalado')
+                
                 X, y = mm.create_sequences(df_scaled, lookback, predict_days)
+                
+                logging.info(f'Secuencias creadas')
                 
                 # Obtenemos los splits
                 X_train, X_val, X_test, y_train, y_val, y_test = mm.obtain_split(X, y, train_scaler, validation_scaler)
                 
-                logging.info('Datos tratados')
-                
-                logging.info(f'Generando modelo {count}')
+                logging.info('Datos listos')
                 
                 ####################################################
                 ############## Generador de modelos ################
                 ####################################################
                 for n_layers in range(1, complexities):
                     to_use = complexities[:n_layers]
+                    
+                    logging.info(f'Generando modelo {count}, complejidades {to_use} y features {features} para el ticker {ticker_code}')
                     
                     model = keras.Sequential()
                     model.add(keras.layers.InputLayer(input_shape=(X_train.shape[1], X_train.shape[2])))
@@ -240,6 +251,8 @@ def train_model_dag():
                         y_pred=y_pred,
                         model_name=cp_path
                     ) 
+                    
+                    count+=1
                        
                     
         except AssertionError as e:

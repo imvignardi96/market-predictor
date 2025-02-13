@@ -45,11 +45,32 @@ class technicalIndicators:
         self.df['rsi'] = 100 - (100 / (1 + rs))
 
     def _compute_aroon(self):
-        rolling_high = self.df["closing_price"].rolling(window=self.aroon_period)
-        rolling_low = self.df["closing_price"].rolling(window=self.aroon_period)
+        """
+        Coomputa los inndicadores AroonUp y AroonDown
 
-        self.df["aroon_up"] = (rolling_high.apply(lambda x: x.argmax()) / self.aroon_period) * 100
-        self.df["aroon_down"] = (rolling_low.apply(lambda x: x.argmin()) / self.aroon_period) * 100
+        - Aroon Up: Medida de hace cuanto se produjo el mayor "high"
+        - Aroon Down: Medida de hace cuanto se produjo el menor "low"
+        """
+
+        if not hasattr(self, "df") or "closing_price" not in self.df.columns:
+            raise ValueError("DataFrame missing or does not contain 'closing_price' column")
+
+        # Obtener Aroon Up
+        self.df["aroon_up"] = (
+            (self.aroon_period - 1 - self.df["closing_price"]
+            .rolling(window=self.aroon_period)
+            .apply(lambda x: x[::-1].idxmax(), raw=False))
+            / self.aroon_period
+        ) * 100
+
+        # Obtener Aroon Down
+        self.df["aroon_down"] = (
+            (self.aroon_period - 1 - self.df["closing_price"]
+            .rolling(window=self.aroon_period)
+            .apply(lambda x: x[::-1].idxmin(), raw=False))
+            / self.aroon_period
+        ) * 100
+
 
     
     def _compute_macd(self):
@@ -71,10 +92,10 @@ class technicalIndicators:
         self.df['macd'] = self.df['ema_fast'] - self.df['ema_slow']
         
         # Calculate the Signal line
-        self.df['signal'] = self.df['macd'].ewm(span=self.macd_signal, adjust=False).mean()
+        self.df['macd_signal'] = self.df['macd'].ewm(span=self.macd_signal, adjust=False).mean()
         
         # Calculate the MACD Histogram
-        self.df['macd_hist'] = self.df['macd'] - self.df['signal']
+        self.df['macd_hist'] = self.df['macd'] - self.df['macd_signal']
         
         # Drop the intermediate EMA columns
         self.df.drop(columns=['ema_fast', 'ema_slow'], axis=1, errors='ignore', inplace=True)
