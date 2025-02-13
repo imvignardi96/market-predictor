@@ -58,14 +58,16 @@ def train_model_dag():
     )
     def get_data(ticker):
         import tempfile
-        from dateutil.relativedelta import relativedelta
         
         depth = int(Variable.get('model_data_depth'))
 
         if depth<=0:
             raise ValueError('Invalid data depth. Check Airflow variable "model_data_depth"')
         
-        data_depth = pendulum.now().date()-relativedelta(months=int(depth))
+        data_depth = pendulum.now().subtract(months=depth).date()
+        logging.info(f'Meses de profundidad: {depth}')
+        logging.info(f'Extraccion a partir de fecha: {data_depth}')
+        
         ticker_id = ticker['id']
         ticker_code = ticker['ticker']
         
