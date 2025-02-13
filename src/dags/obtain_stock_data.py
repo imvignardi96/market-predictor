@@ -180,6 +180,7 @@ def stock_data_dag():
         macd_fast = int(Variable.get('cp_macd_fast'))
         macd_slow = int(Variable.get('cp_macd_slow'))
         macd_signal = int(Variable.get('cp_macd_signal'))
+        data_depth = int(Variable.get('model_data_depth')) # Se computaran los datos que se utilizaran en el modelo
         
         # Inicializamos la clase
         indicators = technicalIndicators(
@@ -204,7 +205,7 @@ def stock_data_dag():
             WHERE ticker_id = {ticker_id}
                 AND (rsi IS NULL OR aroon_up IS NULL OR macd IS NULL OR obv IS NULL)
                 AND value_at >= (
-                    SELECT DATE_SUB(MAX(value_at), INTERVAL {max_depth} DAY)
+                    SELECT DATE_SUB(MAX(value_at), INTERVAL {data_depth} MONTH)
                     FROM stock_data_daily
                     WHERE ticker_id = {ticker_id}
                 )
