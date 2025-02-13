@@ -67,6 +67,7 @@ def train_model_dag():
         
         data_depth = pendulum.now().date()-relativedelta(months=int(depth))
         ticker_id = ticker['id']
+        ticker_code = ticker['ticker']
         
         # Obtenemos los datos de stock
         stock_data = connector.read_data('stock_data_daily', {'value_at':('>=', data_depth), 'ticker_id':ticker_id})
@@ -79,7 +80,7 @@ def train_model_dag():
         stock_data.to_csv(temp_file_path, index=False)  # Save DataFrame as CSV
         temp_file.close()
         
-        return temp_file_path
+        return {'code':ticker_code, 'path':temp_file_path}
     
     @task(
         doc_md=
@@ -87,13 +88,17 @@ def train_model_dag():
             Esta tarea lee el archivo temporal y genera el modelo
         """
     )
-    def generate_models(file_path):
+    def generate_models(ticker_dict):
         import keras
         from sklearn.preprocessing import MinMaxScaler
         from utils.plotter import LSTMPlotter
         import os
         
         try:
+            # Extrer datos diccionario
+            ticker_code = ticker_dict['code']
+            file_path = ticker_dict['path']
+            
             # Variables generadoras de configuracion base de modelo.
             batch_size = int(Variable.get('model_batch_size'))
             epochs = int(Variable.get('model_epochs'))
@@ -204,7 +209,7 @@ def train_model_dag():
                     logging.info(f'Compilando modelo con optimizador adam, funcion de perdida mse')
                     model.compile(optimizer='adam', loss='mape', metrics=['mse', 'mae'])
 
-                    cp_path = f"model_{'_'.join(str(feature) for feature in features)}_{n_layers}.keras"
+                    cp_path = f"model_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.keras"
                     if os.path.exists(cp_path):
                         os.remove(cp_path)
                         
