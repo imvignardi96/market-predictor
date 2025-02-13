@@ -72,7 +72,7 @@ def train_model_dag():
         stock_data = connector.read_data('stock_data_daily', {'value_at':('>=', data_depth), 'ticker_id':ticker_id})
         stock_data = stock_data['value_at', 'opening_price', 'closing_price', 'volume', 'rsi', 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv']
         
-        temp_file = tempfile.NamedTemporaryFile(delete=True, suffix=".csv")
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
         temp_file_path = temp_file.name
         stock_data.to_csv(temp_file_path, index=False)  # Save DataFrame as CSV
         temp_file.close()
@@ -235,7 +235,7 @@ def train_model_dag():
             raise AirflowFailException
 
     tickers = get_tickers()
-    paths = get_data.expand(tickers)
-    generate_models.expand(paths)
+    paths = get_data.expand(ticker=tickers)
+    generate_models.expand(file_path=paths)
     
 model_instance = train_model_dag()
