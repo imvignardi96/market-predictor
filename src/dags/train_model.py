@@ -73,8 +73,9 @@ def train_model_dag():
         
         # Obtenemos los datos de stock
         stock_data = connector.read_data('stock_data_daily', {'value_at':('>=', data_depth), 'ticker_id':ticker_id})
-        logging.info(f'Datos extraidos: {stock_data.head(1)}')
-        stock_data = stock_data['value_at', 'opening_price', 'closing_price', 'volume', 'rsi', 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv']
+        logging.info(f'Datos extraidos')
+        
+        stock_data = stock_data[['value_at', 'opening_price', 'closing_price', 'volume', 'rsi', 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv']]
         
         # Generamos un fichero temporal para poder usarlo los datos en otro task especifico
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
