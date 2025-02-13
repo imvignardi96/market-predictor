@@ -8,3 +8,7 @@ yfinance==0.2.51
 sqlalchemy==1.4.54
 pyautogui==0.9.54
 opencv-python==4.11.0.86
+tensorflow==2.18.0
+keras==3.8.0
+scikit-learn==1.6.1
+matplotlib==3.10.0
