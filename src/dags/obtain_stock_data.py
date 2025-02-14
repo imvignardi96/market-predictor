@@ -156,6 +156,7 @@ def stock_data_dag():
 
             df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d', errors='coerce')
             df['ticker_id'] = ticker_id
+            df.sort_index(ascending=True, inplace=True)
             
             # Ingesta en BBDD
             list_of_data = df.to_dict(orient='records')
