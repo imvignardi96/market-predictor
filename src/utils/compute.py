@@ -33,15 +33,15 @@ class technicalIndicators:
     
     def _compute_rsi(self):
         delta = self.df['closing_price'].diff()
+        delta = delta.dropna()
 
-        gain = delta.where(delta > 0, 0)
-        loss = -delta.where(delta < 0, 0)
+        gain, loss = delta.clip(lower=0), delta.clip(upper=0. lower=None)
 
         # Use Exponential Moving Average for smoother RSI
-        avg_gain = gain.ewm(span=self.rsi_period, adjust=False).mean()
-        avg_loss = loss.ewm(span=self.rsi_period, adjust=False).mean()
+        ema_up = gain.ewm(span=1/self.rsi_period, min_periods=self.rsi_period).mean()
+        ema_down = loss.ewm(span=1/self.rsi_period, min_periods=self.rsi_period).mean()
 
-        rs = avg_gain / avg_loss
+        rs = ema_up / ema_down
         self.df['rsi'] = 100 - (100 / (1 + rs))
 
     def _compute_aroon(self):
@@ -53,14 +53,14 @@ class technicalIndicators:
         """
         # Computar Aroon Up
         self.df['aroon_up'] = (self.df['high_price']
-                               .rolling(window=self.aroon_period)
-                               .apply(lambda x: ((self.aroon_period - 1) - x.argmax()) / (self.aroon_period - 1) * 100, raw=True)
+                               .rolling(window=self.aroon_period, closed='both')
+                               .apply(lambda x: ((self.aroon_period - 1) - x.argmax()) / (self.aroon_period) * 100, raw=True)
         )
         
         # Computar Aroon Up
         self.df['aroon_down'] = (self.df['low_price']
-                                 .rolling(window=self.aroon_period)
-                                 .apply(lambda x: ((self.aroon_period - 1) - x.argmin()) / (self.aroon_period - 1) * 100, raw=True)
+                                 .rolling(window=self.aroon_period, closed='both')
+                                 .apply(lambda x: ((self.aroon_period) - x.argmin()) / (self.aroon_period) * 100, raw=True)
         )
     
     def _compute_macd(self):
