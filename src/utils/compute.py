@@ -51,25 +51,21 @@ class technicalIndicators:
         - Aroon Up: Medida de hace cuanto se produjo el mayor "high"
         - Aroon Down: Medida de hace cuanto se produjo el menor "low"
         """
-
-        if not hasattr(self, "df") or "closing_price" not in self.df.columns:
-            raise ValueError("DataFrame missing or does not contain 'closing_price' column")
-
-        # Obtener Aroon Up
+        # Computar Aroon Up
         self.df["aroon_up"] = (
-            (self.aroon_period - 1 - self.df["closing_price"]
+            (self.aroon_period - 1 - self.df["high_price"]
             .rolling(window=self.aroon_period)
-            .apply(lambda x: x[::-1].idxmax(), raw=False))
-            / self.aroon_period
-        ) * 100
+            .apply(lambda x: x[::-1].argmax(), raw=True))
+            / (self.aroon_period - 1) * 100
+        )
 
-        # Obtener Aroon Down
+        # Computar Aroon Down
         self.df["aroon_down"] = (
-            (self.aroon_period - 1 - self.df["closing_price"]
+            (self.aroon_period - 1 - self.df["low_price"]
             .rolling(window=self.aroon_period)
-            .apply(lambda x: x[::-1].idxmin(), raw=False))
-            / self.aroon_period
-        ) * 100
+            .apply(lambda x: x[::-1].argmin(), raw=True))
+            / (self.aroon_period - 1) * 100
+    )
 
 
     
