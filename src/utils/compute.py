@@ -52,22 +52,16 @@ class technicalIndicators:
         - Aroon Down: Medida de hace cuanto se produjo el menor "low"
         """
         # Computar Aroon Up
-        self.df["aroon_up"] = (
-            (self.aroon_period - 1 - self.df["high_price"]
-            .rolling(window=self.aroon_period)
-            .apply(lambda x: x[::-1].argmax(), raw=True))
-            / (self.aroon_period - 1) * 100
+        self.df['aroon_up'] = (self.df['high_price']
+                               .rolling(window=self.aroon_period)
+                               .apply(lambda x: ((self.aroon_period - 1) - x.argmax()) / (self.aroon_period - 1) * 100, raw=True)
         )
-
-        # Computar Aroon Down
-        self.df["aroon_down"] = (
-            (self.aroon_period - 1 - self.df["low_price"]
-            .rolling(window=self.aroon_period)
-            .apply(lambda x: x[::-1].argmin(), raw=True))
-            / (self.aroon_period - 1) * 100
-    )
-
-
+        
+        # Computar Aroon Up
+        self.df['aroon_down'] = (self.df['low_price']
+                                 .rolling(window=self.aroon_period)
+                                 .apply(lambda x: ((self.aroon_period - 1) - x.argmin()) / (self.aroon_period - 1) * 100, raw=True)
+        )
     
     def _compute_macd(self):
         """
