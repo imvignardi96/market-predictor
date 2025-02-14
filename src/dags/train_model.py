@@ -227,11 +227,14 @@ def train_model_dag():
                     os.makedirs(this_model, exist_ok=True) # Crear si no existe
                     cp_path = os.path.join(this_model, cp_filename)
                     
-                    logging.innfo(f'Path del modelo: {cp_path}')
+                    logging.info(f'Path del modelo: {cp_path}')
                     
-                    # Eliminar el checkpoinnt si ya existe
-                    if os.path.exists(cp_path):
-                        os.remove(cp_path)
+                    # Eliminar tdos los datos de la carpeta
+                    if os.path.exists(this_model) and os.path.isdir(this_model):
+                        for file_name in os.listdir(this_model):
+                            file_path = os.path.join(this_model, file_name)
+                            if os.path.isfile(file_path):
+                                os.remove(file_path)
                         
                     cp = keras.callbacks.ModelCheckpoint(cp_path, save_best_only=True, save_weights_only=False)
                     model.compile(optimizer='adam', loss='mape', metrics=['mse', 'mape'])
