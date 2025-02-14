@@ -293,10 +293,10 @@ def train_model_dag():
         plotter = LSTMPlotter(rows=20, cols=20)
         
         for directory in directories:
-            logging.info(f'Inspeccionando directorio {directory}')
+            logging.info(f'Inspeccionando directorio {os.path.join(base_path, directory)}')
             
             model_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('model_')]
-            X_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('X_test')]
+            X_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('x_test')]
             y_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('y_test')]
             
             if model_file and X_file and y_file:

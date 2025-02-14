@@ -36,7 +36,8 @@ def obtain_split(X, y, training_scaler, validation_scaler) -> np.ndarray:
     return X_train, X_val, X_test, y_train, y_val, y_test
 
 def scale_dataframe(scaler:MinMaxScaler, train_split:int, val_split:int, df:DataFrame, features:list):
-
+    df_scaled = df.copy()
+    
     # Get the actual DateTime indices for training, validation, and test splits
     train_index = df.index[:train_split]  # First part for training
     val_index = df.index[train_split:train_split+val_split]  # Validation set
@@ -46,11 +47,11 @@ def scale_dataframe(scaler:MinMaxScaler, train_split:int, val_split:int, df:Data
     scaler.fit(df.loc[train_index, features])
 
     # Transform and reassign values
-    df.loc[train_index, features] = scaler.transform(df.loc[train_index, features])
-    df.loc[val_index, features] = scaler.transform(df.loc[val_index, features])
-    df.loc[test_index, features] = scaler.transform(df.loc[test_index, features])
+    df_scaled.loc[train_index, features] = scaler.transform(df.loc[train_index, features])
+    df_scaled.loc[val_index, features] = scaler.transform(df.loc[val_index, features])
+    df_scaled.loc[test_index, features] = scaler.transform(df.loc[test_index, features])
     
-    return df
+    return df_scaled
 
 
 def generate_features(variable_features):
