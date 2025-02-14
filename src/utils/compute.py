@@ -53,14 +53,14 @@ class technicalIndicators:
         """
         # Computar Aroon Up
         self.df['aroon_up'] = (self.df['high_price']
-                               .rolling(window=self.aroon_period, closed='both')
-                               .apply(lambda x: ((self.aroon_period - 1) - x.argmax()) / (self.aroon_period) * 100, raw=True)
+                                .rolling(window=self.aroon_period+1, min_periods=self.aroon_period)
+                                .apply(lambda x: (x.argmax() / self.aroon_period), raw=True)*100
         )
         
         # Computar Aroon Up
         self.df['aroon_down'] = (self.df['low_price']
-                                 .rolling(window=self.aroon_period, closed='both')
-                                 .apply(lambda x: ((self.aroon_period) - x.argmin()) / (self.aroon_period) * 100, raw=True)
+                                    .rolling(window=self.aroon_period+1, min_periods=self.aroon_period)
+                                    .apply(lambda x: (x.argmin() / self.aroon_period), raw=True)*100
         )
     
     def _compute_macd(self):
