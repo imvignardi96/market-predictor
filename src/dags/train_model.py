@@ -96,7 +96,10 @@ def train_model_dag():
         import keras
         from sklearn.preprocessing import MinMaxScaler
         import numpy as np
+        import warnings
         import os
+        
+        warnings.filterwarnings('ignore')
         
         try:
             # Extrer datos diccionario
@@ -196,7 +199,7 @@ def train_model_dag():
                 ####################################################
                 ############## Generador de modelos ################
                 ####################################################
-                for n_layers in range(1, complexities):
+                for n_layers in range(1, len(complexities)):
                     to_use = complexities[:n_layers]
                     
                     logging.info(f'Generando modelo {count}, complejidades {to_use} y features {features} para el ticker {ticker_code}')
