@@ -95,9 +95,12 @@ def train_model_dag():
     def generate_models(ticker_dict):
         import keras
         from sklearn.preprocessing import MinMaxScaler
+        import tensorflow as tf
         import numpy as np
         import warnings
         import os
+        
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' # Eliminacion logging INFO keras
         
         warnings.filterwarnings('ignore')
         
