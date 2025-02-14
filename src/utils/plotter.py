@@ -1,37 +1,38 @@
 import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error
 
 class LSTMPlotter:
-    def __init__(self, rows, cols):
-        # Initialize the figure and axes for the grid of plots
-        self.rows = rows
-        self.cols = cols
-        self.fig, self.axes = plt.subplots(rows, cols, figsize=(15, 12))
-        self.axes = self.axes.flatten()  # Flatten the 2D axes array for easier indexing
-        self.plot_idx = 0  # Keeps track of the current subplot index
+    def __init__(self):
+        pass # Incluir a futuro grafica con ejes
     
-    def add_plot(self, y_test:list, y_pred:list, model_name:str, metrics:dict = None):
-        # Add a plot to the appropriate subplot
-        if self.plot_idx < len(self.axes):
-            ax = self.axes[self.plot_idx]
-            ax.plot(y_pred, label='Predicted prices')
-            ax.plot(y_test, label='Actual prices')
-            ax.set_title(f'Model {model_name}')
-            ax.set_xlabel('Index')
-            ax.set_ylabel('Closing Price')
-            
-            if metrics is not None:
-                metrics_text = ''
-                for metric, value in metrics.items():
-                    metrics_text+=f'{metric}: {value:.2f}\n'
-                    
-                ax.text(5, max(y_test) * 0.995, metrics_text, fontsize=18, color='black', 
-                    bbox=dict(facecolor='white', alpha=0.6))
-            
-            self.plot_idx += 1  # Move to the next subplot
-        else:
-            print("Warning: No more space in the subplot grid!")
+    def add_plot(self, y_test:list, y_pred:list, model_path:str):
+        # Computar metricas
+        mape = mean_absolute_percentage_error(y_test, y_pred) * 100
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+
+        # Graficar resultados
+        plt.figure(figsize=(30, 20))
+        plt.plot(y_test, color='blue', label='Actual Closing Price')
+        plt.plot(y_pred, color='red', label='Predicted Closing Price')
+
+        # Titulo y labels
+        plt.gca().set_xticklabels()
+        plt.title('Stock Closing Price Prediction', fontsize=20)
+        plt.xlabel('Time', fontsize=16)
+        plt.ylabel('Stock Closing Price', fontsize=16)
+        plt.legend(fontsize=14)
+
+        # Mostrar metricas principales
+        metrics_text = f"MAPE: {mape:.2f}%\nRMSE: {rmse:.2f}\nMSE: {mse:.2f}"
+        plt.text(2, max(y_test) * 0.995, metrics_text, fontsize=18, color='black', 
+                bbox=dict(facecolor='white', alpha=0.6))
+
+        # Show plot
+        plt.savefig(model_path)
             
     def show(self):
-        # Adjust layout and display the final plot
+        # En caso de querer mostrar la figura enn alguna situacion
         plt.tight_layout()
         plt.show()
