@@ -22,6 +22,8 @@ jobs:
           port: 22  # Default SSH port, can be changed if needed
           script: |
             cd /home/ignacio/airflow/market-predictor
+            git fetch origin
+            git reset --hard origin/prod
             git pull origin prod
 
       - name: Reload requirements.txt
