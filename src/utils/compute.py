@@ -38,8 +38,8 @@ class technicalIndicators:
         gain, loss = delta.clip(lower=0), delta.clip(upper=0, lower=None)
 
         # Use Exponential Moving Average for smoother RSI
-        ema_up = gain.ewm(span=1/self.rsi_period, min_periods=self.rsi_period).mean()
-        ema_down = loss.ewm(span=1/self.rsi_period, min_periods=self.rsi_period).mean()
+        ema_up = gain.ewm(alpha=1/self.rsi_period, min_periods=self.rsi_period).mean()
+        ema_down = loss.ewm(alpha=1/self.rsi_period, min_periods=self.rsi_period).mean()
 
         rs = ema_up / ema_down
         self.df['rsi'] = 100 - (100 / (1 + rs))
