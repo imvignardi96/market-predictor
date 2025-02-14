@@ -199,20 +199,27 @@ def train_model_dag():
                 ####################################################
                 ############## Generador de modelos ################
                 ####################################################
-                for n_layers in range(1, len(complexities)):
+                for n_layers in range(1, len(complexities)+1):
                     to_use = complexities[:n_layers]
                     
                     logging.info(f'Generando modelo {count}, complejidades {to_use} y features {features} para el ticker {ticker_code}')
                     
                     model = keras.Sequential()
                     model.add(keras.layers.InputLayer(input_shape=(X_train.shape[1], X_train.shape[2])))
-                    for units in to_use:
+                    for idx, units in enumerate(to_use):
+                        
                         if is_bidirectional:
                             logging.info(f'Incluyendo capa BiLSTM {int_activation} de complejidad {units}')
-                            model.add(keras.layers.Bidirectional(keras.layers.LSTM(units=units, activation=int_activation)))
+                            if idx==n_layers-1:
+                                model.add(keras.layers.Bidirectional(keras.layers.LSTM(units=units, activation=int_activation, return_sequences=False)))
+                            else:
+                                model.add(keras.layers.Bidirectional(keras.layers.LSTM(units=units, activation=int_activation, return_sequences=True)))
                         else:
                             logging.info(f'Incluyendo capa LSTM {int_activation} de complejidad {units}')
-                            model.add(keras.layers.LSTM(units, activation=int_activation))
+                            if idx==n_layers-1:
+                                model.add(keras.layers.LSTM(units, activation=int_activation, return_sequences=False))
+                            else:
+                                model.add(keras.layers.LSTM(units, activation=int_activation, return_sequences=True))
                     
                     if dropout_rate!=0:
                         logging.info(f'Incluyendo capa Dropout con proporcion {dropout_rate}')
@@ -221,7 +228,7 @@ def train_model_dag():
                     logging.info(f'Incluyendo capa de salida {out_activation} con {predict_days} unidades')
                     model.add(keras.layers.Dense(units=predict_days, activation=out_activation))
                     
-                    logging.info(f'Compilando modelo con optimizador adam, funcion de perdida mse')
+                    logging.info(f'Compilando modelo con optimizador adam, funcion de perdida mape')
                     model.compile(optimizer='adam', loss='mape', metrics=['mse', 'mae'])
                     
                     cp_filename = f"model_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.keras"
