@@ -13,7 +13,7 @@ import logging
     description='DAG para obtener los sentimientos de noticias',
     start_date=pendulum.datetime(2025, 1, 1, tz='UTC'),
     catchup=False,
-    max_active_tasks=3,
+    max_active_tasks=5,
     max_active_runs=1,
     schedule_interval='0 14 * * 6',  # A las 14:00 el sabado
     doc_md=
@@ -95,7 +95,7 @@ def train_model_dag():
     def generate_models(ticker_dict):
         import keras
         from sklearn.preprocessing import MinMaxScaler
-        from utils.plotter import LSTMPlotter
+        import numpy as np
         import os
         
         try:
@@ -169,8 +169,6 @@ def train_model_dag():
             
             count=1
             
-            plotter = LSTMPlotter(rows=len(combination_columns), cols=len(complexities))
-            
             for combination in combination_columns:                
                 # Obtenemos las features de la iteracion
                 features = base_columns+combination            
@@ -223,44 +221,107 @@ def train_model_dag():
                     logging.info(f'Compilando modelo con optimizador adam, funcion de perdida mse')
                     model.compile(optimizer='adam', loss='mape', metrics=['mse', 'mae'])
 
-                    cp_path = f"model_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.keras"
-                    if os.path.exists(cp_path):
-                        os.remove(cp_path)
+                    cp_filename = f"model_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.keras"
+                    base_path = Variable.get('model_path')
+                    this_model = os.path.join(base_path, f'model_{ticker_code.lower()}_{count}')
+                    os.makedirs(this_model, exist_ok=True) # Crear si no existe
+                    cp_path = os.path.join(this_model, cp_filename)
+                    
+                    logging.info(f'Path del modelo: {cp_path}')
+                    
+                    # Eliminar tdos los datos de la carpeta
+                    if os.path.exists(this_model) and os.path.isdir(this_model):
+                        for file_name in os.listdir(this_model):
+                            file_path = os.path.join(this_model, file_name)
+                            if os.path.isfile(file_path):
+                                os.remove(file_path)
                         
-                    cp = keras.callbacks.ModelCheckpoint(cp_path, save_best_only=True)
+                    cp = keras.callbacks.ModelCheckpoint(cp_path, save_best_only=True, save_weights_only=False)
                     model.compile(optimizer='adam', loss='mape', metrics=['mse', 'mape'])
                     early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True)
                     
                     # Hacer fit del modelo actual
-                    fitted = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size, callbacks=[cp,early_stopping])
-
-                    # Carga mejor modelo
-                    model.load_weights(cp_path)
+                    model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size, callbacks=[cp,early_stopping])
                     
-                    # Evaluacion del modelo
-                    test_loss = model.evaluate(X_test, y_test)
-                    logging.info(f'Test Loss: {test_loss}')
+                    # Guardar los datos de test en la misma carpeta con la misma nomenclatura
+                    x_test_filename = f"x_test_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.npy"
+                    x_path = os.path.join(this_model, x_test_filename)
+                    np.save(x_path, X_test)
                     
-                    logging.info(f'Modelo completado')
-                    
-                    # Predicciones del modelo
-                    y_pred = model.predict(X_test)        
-                    
-                    plotter.add_plot(
-                        y_test=y_test,
-                        y_pred=y_pred,
-                        model_name=cp_path
-                    ) 
-                    
+                    y_test_filename = f"y_test_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.npy"
+                    y_path = os.path.join(this_model, y_test_filename)
+                    np.save(y_path, y_test)
+                                        
                     count+=1
                        
                     
         except AssertionError as e:
             logging.error(f'Una o mas variables tienen un valor erroneo: {str(e)}')
             raise AirflowFailException
+        
+    @task(
+        doc_md=
+        """
+            Esta tarea lee el archivo temporal y genera el modelo
+        """,
+        trigger_rule='all_done'
+    )
+    def generate_predictions():
+        import keras
+        import numpy as np
+        from utils.plotter import LSTMPlotter
+        import os
+        
+        base_path = Variable.get('model_path')
+        directories = [d for d in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, d))]
+        plotter = LSTMPlotter(rows=20, cols=20)
+        
+        for directory in directories:
+            model_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('model_')]
+            X_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('X_test')]
+            y_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('y_test')]
+            
+            if model_file and X_file and y_file:
+                try:
+                    model_file_path = os.path.join(base_path, directory, model_file[0])
+                    X_file_path = os.path.join(base_path, directory, X_file[0])
+                    y_file_path = os.path.join(base_path, directory, y_file[0])
+
+                    model = keras.Sequential()
+                    
+                    # Carga mejor modelo
+                    model.load_weights(model_file_path)
+                    X_test = np.load(X_file_path)
+                    y_test = np.load(y_file_path)
+                    
+                    # Evaluacion del modelo
+                    test_loss = model.evaluate(X_test, y_test)
+                    logging.info(f'Test Loss: {test_loss}')
+                    
+                    logging.info(f'Modelo evaluado')
+                    
+                    # Predicciones del modelo
+                    y_pred = model.predict(X_test)    
+                    
+                    logging.info(f'Predicciones realizadas')    
+                    
+                    plotter.add_plot(
+                        y_test=y_test,
+                        y_pred=y_pred,
+                        model_name=model_file[0]
+                    ) 
+                except Exception as e:
+                    logging.error(f"Error en carga de modelo o creacion de predicciones: {e}")
+                    raise AirflowFailException                
+            else:
+                logging.warning('Archivos para modelo no encontrados')
+                    
 
     tickers = get_tickers()
     dictionary = get_data.expand(ticker=tickers)
-    generate_models.expand(ticker_dict=dictionary)
+    model_gen = generate_models.expand(ticker_dict=dictionary)
+    predictions_gen = generate_predictions()
+    
+    model_gen >> predictions_gen
     
 model_instance = train_model_dag()

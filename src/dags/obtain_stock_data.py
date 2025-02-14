@@ -16,7 +16,7 @@ import time
     description='DAG para obtener datos de la plataforma TWS de IB',
     start_date=pendulum.datetime(2025, 1, 1, tz='UTC'),
     catchup=False,
-    max_active_tasks=3,
+    max_active_tasks=5,
     max_active_runs=1,
     schedule_interval='30 23 * * *',  # At 23:30
     doc_md=
