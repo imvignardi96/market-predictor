@@ -9,8 +9,9 @@ def create_sequences(data, lookback=60, forecast_horizon=2):
     sequences = []
     targets = []
     
+    feature_data = data.drop(columns=['target']) # Excluir variable target
     for i in range(lookback, len(data) - forecast_horizon + 1):  # Prevent index out of range
-        sequences.append(data.iloc[i - lookback:i].values)  # Input sequence of past 'lookback' days
+        sequences.append(feature_data.iloc[i - lookback:i].values)  # Input sequence of past 'lookback' days
         targets.append(data.iloc[i:i + forecast_horizon]['target'].values)  # Predict next 2 days
     
     return np.array(sequences), np.array(targets)  # Targets will now have shape (samples, 2)
