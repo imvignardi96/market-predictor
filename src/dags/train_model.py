@@ -223,10 +223,13 @@ def train_model_dag():
                     
                     logging.info(f'Compilando modelo con optimizador adam, funcion de perdida mse')
                     model.compile(optimizer='adam', loss='mape', metrics=['mse', 'mae'])
-
+                    
                     cp_filename = f"model_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.keras"
                     base_path = Variable.get('model_path')
                     this_model = os.path.join(base_path, f'model_{ticker_code.lower()}_{count}')
+                    
+                    logging.info(f'Creando directorio: {this_model}')
+                    
                     os.makedirs(this_model, exist_ok=True) # Crear si no existe
                     cp_path = os.path.join(this_model, cp_filename)
                     
