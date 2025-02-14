@@ -13,7 +13,7 @@ import logging
     description='DAG para obtener los sentimientos de noticias',
     start_date=pendulum.datetime(2025, 1, 1, tz='UTC'),
     catchup=False,
-    max_active_tasks=5,
+    max_active_tasks=3,
     max_active_runs=1,
     schedule_interval='0 14 * * 6',  # A las 14:00 el sabado
     doc_md=
@@ -160,7 +160,7 @@ def train_model_dag():
             # Features a utilizar. Se ha definido un minimo de 3 features y un maximo de 4.
             # El valor de macd es redundante
             variable_columns = ['opening_price', 'obv', ('aroon_up', 'aroon_down'), 'macd_hist', 'rsi']
-            base_columns = ['closing_price', 'target']
+            base_columns = ['closing_price', 'target'] # El target se debe eliminar de X mas adelante
             
             combination_columns = mm.generate_features(variable_columns)
             
@@ -178,7 +178,7 @@ def train_model_dag():
                 # Obtenemos las features de la iteracion
                 features = base_columns+combination            
             
-                df = stock_data[features].copy()  # Ensure df is a separate copy
+                df = stock_data[features].copy()  # Obtenemos el df con las features que queremos
                 
                 train_split = int(train_scaler * len(df))  # Training set size
                 val_split = int(validation_scaler * len(df))  # Validation set size
@@ -187,16 +187,16 @@ def train_model_dag():
 
                 df_scaled = mm.scale_dataframe(scaler, train_split, val_split, df, features)
                 
-                logging.info(f'Dataframe escalado')
+                logging.info(f'Dataframe escalado: {df_scaled.iloc[1].values}')
                 
                 X, y = mm.create_sequences(df_scaled, lookback, predict_days)
                 
-                logging.info(f'Secuencias creadas')
+                logging.info(f'Secuencias creadas: {X[0]}')
                 
                 # Obtenemos los splits
                 X_train, X_val, X_test, y_train, y_val, y_test = mm.obtain_split(X, y, train_scaler, validation_scaler)
                 
-                logging.info('Datos listos')
+                logging.info(f'Datos listos: {X_train[0]}')
                 
                 ####################################################
                 ############## Generador de modelos ################
@@ -204,10 +204,10 @@ def train_model_dag():
                 for n_layers in range(1, len(complexities)+1):
                     to_use = complexities[:n_layers]
                     
-                    logging.info(f'Generando modelo {count}, complejidades {to_use} y features {features} para el ticker {ticker_code}')
+                    logging.info(f'Generando modelo {count}, complejidades {to_use} y features {features} para el ticker {ticker_code.upper()}')
                     
                     model = keras.Sequential()
-                    model.add(keras.layers.InputLayer(input_shape=(X_train.shape[1], X_train.shape[2])))
+                    model.add(keras.layers.InputLayer(input_shape=(X_train.shape[1], X_train.shape[2]))) # Indicar shape con las features
                     for idx, units in enumerate(to_use):
                         if is_bidirectional:
                             logging.info(f'Incluyendo capa BiLSTM {int_activation} de complejidad {units}')
@@ -291,6 +291,8 @@ def train_model_dag():
         plotter = LSTMPlotter(rows=20, cols=20)
         
         for directory in directories:
+            logging.info(f'Inspeccionando directorio {directory}')
+            
             model_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('model_')]
             X_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('X_test')]
             y_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('y_test')]
