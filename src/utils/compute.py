@@ -35,7 +35,7 @@ class technicalIndicators:
         delta = self.df['closing_price'].diff()
         delta = delta.dropna()
 
-        gain, loss = delta.clip(lower=0), delta.clip(upper=0. lower=None)
+        gain, loss = delta.clip(lower=0), delta.clip(upper=0, lower=None)
 
         # Use Exponential Moving Average for smoother RSI
         ema_up = gain.ewm(span=1/self.rsi_period, min_periods=self.rsi_period).mean()
