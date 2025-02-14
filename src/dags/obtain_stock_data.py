@@ -209,7 +209,7 @@ def stock_data_dag():
                     FROM stock_data_daily
                     WHERE ticker_id = {ticker_id}
                 )
-            ORDER BY value_at DESC;
+            ORDER BY value_at ASC;
         """
         data = connector.custom_query(query)
         
