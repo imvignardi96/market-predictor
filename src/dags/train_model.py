@@ -95,9 +95,12 @@ def train_model_dag():
     def generate_models(ticker_dict):
         import keras
         from sklearn.preprocessing import MinMaxScaler
+        import tensorflow as tf
         import numpy as np
         import warnings
         import os
+        
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' # Eliminacion logging INFO keras
         
         warnings.filterwarnings('ignore')
         
@@ -248,6 +251,7 @@ def train_model_dag():
                         for file_name in os.listdir(this_model):
                             file_path = os.path.join(this_model, file_name)
                             if os.path.isfile(file_path):
+                                logging.info(f'Eliminando archivo {file_name} en {this_model}')
                                 os.remove(file_path)
                         
                     cp = keras.callbacks.ModelCheckpoint(cp_path, save_best_only=True, save_weights_only=False)
