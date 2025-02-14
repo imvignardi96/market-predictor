@@ -207,7 +207,6 @@ def train_model_dag():
                     model = keras.Sequential()
                     model.add(keras.layers.InputLayer(input_shape=(X_train.shape[1], X_train.shape[2])))
                     for idx, units in enumerate(to_use):
-                        
                         if is_bidirectional:
                             logging.info(f'Incluyendo capa BiLSTM {int_activation} de complejidad {units}')
                             if idx==n_layers-1:
