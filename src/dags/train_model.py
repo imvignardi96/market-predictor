@@ -290,7 +290,7 @@ def train_model_dag():
         
         base_path = Variable.get('model_path')
         directories = [d for d in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, d))]
-        plotter = LSTMPlotter(rows=20, cols=20)
+        plotter = LSTMPlotter()
         
         for directory in directories:
             logging.info(f'Inspeccionando directorio {os.path.join(base_path, directory)}')
