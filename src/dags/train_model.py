@@ -227,12 +227,12 @@ def train_model_dag():
                     if os.path.exists(cp_path):
                         os.remove(cp_path)
                         
-                    cp = keras.callbacks.ModelCheckpoint(cp_path, save_best_only=True)
+                    cp = keras.callbacks.ModelCheckpoint(cp_path, save_best_only=True, save_weights_only=False)
                     model.compile(optimizer='adam', loss='mape', metrics=['mse', 'mape'])
                     early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True)
                     
                     # Hacer fit del modelo actual
-                    fitted = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size, callbacks=[cp,early_stopping])
+                    model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size, callbacks=[cp,early_stopping])
 
                     # Carga mejor modelo
                     model.load_weights(cp_path)
