@@ -248,6 +248,7 @@ def train_model_dag():
                         for file_name in os.listdir(this_model):
                             file_path = os.path.join(this_model, file_name)
                             if os.path.isfile(file_path):
+                                logging.info(f'Eliminando archivo {file_name} en {this_model}')
                                 os.remove(file_path)
                         
                     cp = keras.callbacks.ModelCheckpoint(cp_path, save_best_only=True, save_weights_only=False)
