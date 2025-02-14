@@ -166,9 +166,11 @@ def train_model_dag():
             
             logging.info(f'Combinacion de features generada')
             
-            complexities = [initial_complexity // (2**i) for i in range(initial_complexity)]
+            complexities=[initial_complexity]
+            for _ in range(2):
+                complexities.append(complexities[-1]//2)
             
-            logging.info(f'Combinacion de complejidades generada')
+            logging.info(f'Combinacion de complejidades generada: {complexities}')
             
             count=1
             
