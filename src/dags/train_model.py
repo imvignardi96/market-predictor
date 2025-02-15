@@ -325,7 +325,7 @@ def train_model_dag():
                     plotter.add_plot(
                         y_test=y_test,
                         y_pred=y_pred,
-                        model_name=os.path.join(base_path, directory, f'{model_file[0]}.png')
+                        model_path=os.path.join(base_path, directory, f'{model_file[0]}.png')
                     ) 
                 except Exception as e:
                     logging.error(f"Error en carga de modelo o creacion de predicciones: {e}")
