@@ -7,7 +7,10 @@ class LSTMPlotter:
     def __init__(self):
         pass # Incluir a futuro grafica con ejes
     
-    def add_plot(self, y_test:list, y_pred:list, model_path:str):
+    def add_plot(self, y_test, y_pred, model_path:str):
+        y_test = np.array(y_test)
+        y_pred = np.array(y_pred)
+    
         # Computar metricas
         mape = mean_absolute_percentage_error(y_test, y_pred) * 100
         mse = mean_squared_error(y_test, y_pred)
