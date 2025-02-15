@@ -19,7 +19,6 @@ class LSTMPlotter:
         plt.plot(y_pred, color='red', label='Predicted Closing Price')
 
         # Titulo y labels
-        plt.gca().set_xticklabels()
         plt.title('Stock Closing Price Prediction', fontsize=20)
         plt.xlabel('Time', fontsize=16)
         plt.ylabel('Stock Closing Price', fontsize=16)
