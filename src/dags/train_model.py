@@ -307,7 +307,7 @@ def train_model_dag():
 
                     
                     # Carga mejor modelo
-                    keras.models.load_model(model_file_path)
+                    model:keras.Sequential = keras.models.load_model(model_file_path)
                     X_test = np.load(X_file_path)
                     y_test = np.load(y_file_path)
                     
