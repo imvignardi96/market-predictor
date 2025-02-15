@@ -305,10 +305,9 @@ def train_model_dag():
                     X_file_path = os.path.join(base_path, directory, X_file[0])
                     y_file_path = os.path.join(base_path, directory, y_file[0])
 
-                    model = keras.Sequential()
                     
                     # Carga mejor modelo
-                    model.load_weights(model_file_path)
+                    model:keras.Sequential = keras.models.load_model(model_file_path)
                     X_test = np.load(X_file_path)
                     y_test = np.load(y_file_path)
                     
