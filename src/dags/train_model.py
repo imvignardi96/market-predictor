@@ -373,7 +373,7 @@ def train_model_dag():
 
         EmailOperator(
             to=destinataries,
-            subject=f'Resultados LSTM {pendulum.now().strftime('%Y-%m-%d')}',
+            subject=f"Resultados LSTM {pendulum.now().strftime('%Y-%m-%d')}",
             html_content=html_content,
             files=[file]
         )
