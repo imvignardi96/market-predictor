@@ -144,7 +144,7 @@ def stock_data_dag():
                     
                 execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
             # Handling errores
-            if app.error_code==162 and app.error_tickers==req_id:
+            if app.error_code==162:
                 break
             elif app.error_code is not None and app.error_tickers==req_id:
                 app.disconnect()
