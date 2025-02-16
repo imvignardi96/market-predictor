@@ -13,7 +13,7 @@ import logging
     description='DAG para obtener los sentimientos de noticias',
     start_date=pendulum.datetime(2025, 1, 1, tz='UTC'),
     catchup=False,
-    max_active_tasks=1,
+    max_active_tasks=3,
     max_active_runs=1,
     schedule_interval='0 14 * * 6',  # A las 14:00 el sabado
     doc_md=
@@ -94,7 +94,6 @@ def train_model_dag():
     )
     def generate_models(ticker_dict):
         import os
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Eliminacion logging INFO y WARNING keras
         import keras
         from sklearn.preprocessing import MinMaxScaler
         import numpy as np
@@ -231,9 +230,6 @@ def train_model_dag():
                     logging.info(f'Incluyendo capa de salida {out_activation} con {predict_days} unidades')
                     model.add(keras.layers.Dense(units=predict_days, activation=out_activation))
                     
-                    logging.info(f'Compilando modelo con optimizador adam, funcion de perdida mape')
-                    model.compile(optimizer='adam', loss='mape', metrics=['mse', 'mae'])
-                    
                     cp_filename = f"model_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.keras"
                     base_path = Variable.get('model_path')
                     this_model = os.path.join(base_path, f'model_{ticker_code.lower()}_{count}')
@@ -254,11 +250,11 @@ def train_model_dag():
                                 os.remove(file_path)
                         
                     cp = keras.callbacks.ModelCheckpoint(cp_path, save_best_only=True, save_weights_only=False)
-                    model.compile(optimizer='adam', loss='mape', metrics=['mse', 'mape'])
+                    model.compile(optimizer='adam', loss='mse', metrics=['mae', 'mape'])
                     early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True)
                     
                     # Hacer fit del modelo actual
-                    model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size, callbacks=[cp,early_stopping])
+                    model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size, callbacks=[cp,early_stopping], verbose=2)
                     
                     # Guardar los datos de test en la misma carpeta con la misma nomenclatura
                     x_test_filename = f"x_test_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.npy"
