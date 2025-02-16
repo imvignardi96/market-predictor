@@ -65,7 +65,6 @@ class IBApi(EWrapper, EClient):
         self.data_ready_event.set()  # Datos listos. Permite proxima ejecucion
         
     def error(self, reqId, errorCode, errorString):
-        tws_warnnings = [2100, 2101, 2102, 2103, 2104, 2105, 2158, 2106, 2107, 2108, 2109, 2110, 2137, 2168, 2169]
         """Funcion de manejo de errores IB API"""
         if errorCode == 162:  # HMDS query returned no data
             logging.warning(f"Datos no disponibles en IB: {reqId}")
