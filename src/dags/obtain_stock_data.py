@@ -2,7 +2,7 @@ from utils.ibconnector import IBApi
 import pendulum
 from airflow.decorators import task, dag
 from airflow.models import Variable
-from airflow.exceptions import AirflowSkipException
+from airflow.exceptions import AirflowSkipException, AirflowFailException
 
 from utils.sqlconnector import SQLConnector
 
@@ -74,6 +74,7 @@ def stock_data_dag():
         ib_host = Variable.get('ib_host')
         ib_port = int(Variable.get('ib_port'))
         ib_client = int(Variable.get('ib_client'))+idx
+        ib_granularity = Variable.get('ib_granularity')
 
         app = IBApi()
 
@@ -103,7 +104,7 @@ def stock_data_dag():
             data_start = Variable.get('cp_data_start')
             logging.info(f'Fecha a utilizar: {data_start}')
             end_date = pendulum.from_format(data_start, 'YYYY-MM-DD', tz='UTC').date()
-            n_points = '1 W'
+            n_points = '1 Y'
         else:
             end_date = pendulum.from_format(max_date_value, 'YYYY-MM-DD', tz='UTC').date()
             diff = start_date.diff(end_date).in_days()
@@ -113,7 +114,6 @@ def stock_data_dag():
         execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
         count = 0
         req_id = f"{ticker_id}{count}"
-        ib_granularity = Variable.get('ib_granularity')
         
         logging.info("Parametros establecidos.")
 
@@ -124,10 +124,10 @@ def stock_data_dag():
             # Esperar a evento activo
             if app.data_ready_event.is_set():                
                 diff = start_date.diff(end_date).in_days()
-                if diff>=7:
+                if diff>=366:
                     if not first_exec:
-                        start_date = start_date-pendulum.duration(weeks=1)
-                        n_points = '1 W'
+                        start_date = start_date-pendulum.duration(years=1)
+                        n_points = '1 Y'
                     else:
                         first_exec = False
                 else:
@@ -145,6 +145,12 @@ def stock_data_dag():
                 
                 count += 1
                 req_id = f"{ticker_id}{count}"
+            # Handling errores
+            if app.error_code==162 and app.error_tickers==req_id:
+                break
+            elif app.error_code is not None and app.error_tickers==req_id:
+                app.disconnect()
+                raise AirflowFailException
 
         app.disconnect()
         
