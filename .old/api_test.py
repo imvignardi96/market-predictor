@@ -8,9 +8,9 @@ import pandas as pd
 import threading
 import time
 
-depth = 180
-start_date = datetime.strptime('20240527 23:59:00', '%Y%m%d %H:%M:%S')
-ticker = 'MSFT'
+depth = 1
+start_date = datetime.strptime('20050527 23:59:00', '%Y%m%d %H:%M:%S')
+ticker = 'TSLA'
 timestep = 30
 
 class IBApi(EWrapper, EClient):
@@ -29,6 +29,7 @@ class IBApi(EWrapper, EClient):
             "Volume": bar.volume
         }
         # print(bar.date)
+        print(data)
         self.historical_data.append(data)
         
     def historicalDataEnd(self, reqId: int, start: str, end: str):
