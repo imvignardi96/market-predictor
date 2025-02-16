@@ -383,7 +383,7 @@ def train_model_dag():
             files=[file]
         )
         
-        email.execute(context={})
+        return email
                     
 
     tickers = get_tickers()
