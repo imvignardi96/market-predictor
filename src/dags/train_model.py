@@ -94,7 +94,6 @@ def train_model_dag():
     )
     def generate_models(ticker_dict):
         import os
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Eliminacion logging INFO y WARNING keras
         import keras
         from sklearn.preprocessing import MinMaxScaler
         import numpy as np
@@ -255,7 +254,7 @@ def train_model_dag():
                     early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True)
                     
                     # Hacer fit del modelo actual
-                    model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size, callbacks=[cp,early_stopping])
+                    model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size, callbacks=[cp,early_stopping], verbose=2)
                     
                     # Guardar los datos de test en la misma carpeta con la misma nomenclatura
                     x_test_filename = f"x_test_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.npy"
