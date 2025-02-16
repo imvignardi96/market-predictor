@@ -18,6 +18,7 @@ class IBApi(EWrapper, EClient):
         EClient.__init__(self, self) 
 
         self.historical_data = []
+        self.no_data_tickers = set()
          
     def historicalData(self, reqId: int, bar: BarData):
         data = {
@@ -35,6 +36,12 @@ class IBApi(EWrapper, EClient):
     def historicalDataEnd(self, reqId: int, start: str, end: str):
         print("Historical data retrieval completed")
         self.data_ready = True  # Set flag when data retrieval is complete
+        
+    def error(self, reqId, errorCode, errorString):
+        """Handle errors from TWS"""
+        if errorCode == 162:  # HMDS query returned no data
+            print(f"❌ No data available for reqId {reqId}")
+            self.no_data_tickers.add(reqId)
 
 def run_loop():
     app.run()    
@@ -71,6 +78,11 @@ while depth > 0:
         
         app.data_ready = False
         depth = depth - 1
+    elif req_id in app.no_data_tickers:
+        print('Finishing this instance')
+        app.disconnect()
+        break
+        
     time.sleep(1)
 
 # Convert historical data to DataFrame
