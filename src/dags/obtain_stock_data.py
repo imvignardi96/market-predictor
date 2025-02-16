@@ -148,7 +148,7 @@ def stock_data_dag():
             # Handling errores
             if app.error_code==162 and app.error_tickers==req_id:
                 break
-            elif app.error_code is not None:
+            elif app.error_code is not None and app.error_tickers==req_id:
                 app.disconnect()
                 raise AirflowFailException
 
