@@ -346,6 +346,7 @@ def train_model_dag():
         
         # Generar zip
         count = 0
+        logging.info('Generando archivo zip con resultados')
         with zipfile.ZipFile(zip_file, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
             for root, _, files in os.walk(base_path):
                 for file in files:
@@ -360,24 +361,29 @@ def train_model_dag():
         contents_folder = os.path.abspath(os.path.join(dag_folder, "..", "contents"))
         
         if count!=0:
+            logging.info('Zip creado')
             file = zip_file
             html_file_path = os.path.join(contents_folder, "body.html")
 
             with open(html_file_path, "r", encoding="utf-8") as file:
                 html_content = file.read()
         else:
+            logging.error('No se encontraron resultados')
             file = None
             html_file_path = os.path.join(contents_folder, "body_error.html")
 
             with open(html_file_path, "r", encoding="utf-8") as file:
                 html_content = file.read()
 
-        EmailOperator(
+        email = EmailOperator(
+            task_id='lstm_results',
             to=destinataries,
             subject=f"Resultados LSTM {pendulum.now().strftime('%Y-%m-%d')}",
             html_content=html_content,
             files=[file]
         )
+        
+        email.execute(context={})
                     
 
     tickers = get_tickers()
