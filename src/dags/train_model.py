@@ -329,13 +329,62 @@ def train_model_dag():
                     raise AirflowFailException                
             else:
                 logging.warning('Archivos para modelo no encontrados')
+                
+    @task(
+        doc_md="""Task para envio de email con resultados""",
+        trigger_mode = 'all_done'
+    )
+    def send_email():
+        from airflow.operators.email import EmailOperator
+        import zipfile
+        import os
+        
+        base_path = Variable.get('model_path')
+        destinataries = list(Variable.get('destinataries'))
+        zip_file = os.path.join(base_path, 'lstm_outputs.zip')
+        
+        # Generar zip
+        count = 0
+        with zipfile.ZipFile(zip_file, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
+            for root, _, files in os.walk(base_path):
+                for file in files:
+                    if file.lower().endswith('.png'):
+                        file_path = os.path.join(root, file)
+                        archive_name = os.path.relpath(file_path, base_path)  # Preserve relative paths
+                        zf.write(file_path, arcname=archive_name)
+                        count+=1
+
+        # Leer html
+        dag_folder = os.path.dirname(os.path.abspath(__file__))
+        contents_folder = os.path.abspath(os.path.join(dag_folder, "..", "contents"))
+        
+        if count!=0:
+            file = zip_file
+            html_file_path = os.path.join(contents_folder, "body.html")
+
+            with open(html_file_path, "r", encoding="utf-8") as file:
+                html_content = file.read()
+        else:
+            file = None
+            html_file_path = os.path.join(contents_folder, "body_error.html")
+
+            with open(html_file_path, "r", encoding="utf-8") as file:
+                html_content = file.read()
+
+        EmailOperator(
+            to=destinataries,
+            subject=f'Resultados LSTM {pendulum.now().strftime('%Y-%m-%d')}',
+            html_content=html_content,
+            files=[file]
+        )
                     
 
     tickers = get_tickers()
     dictionary = get_data.expand(ticker=tickers)
     model_gen = generate_models.expand(ticker_dict=dictionary)
     predictions_gen = generate_predictions()
+    send_results = send_email()
     
-    model_gen >> predictions_gen
+    model_gen >> predictions_gen >> send_results
     
 model_instance = train_model_dag()
