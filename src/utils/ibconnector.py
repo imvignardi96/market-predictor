@@ -68,22 +68,24 @@ class IBApi(EWrapper, EClient):
         tws_warnnings = [2100, 2101, 2102, 2103, 2104, 2105, 2158, 2106, 2107, 2108, 2109, 2110, 2137, 2168, 2169]
         """Funcion de manejo de errores IB API"""
         if errorCode == 162:  # HMDS query returned no data
-            logging.info(f"Datos no disponibles en IB: {reqId}")
+            logging.warning(f"Datos no disponibles en IB: {reqId}")
             self.error_code = errorCode
             self.error_tickers = reqId
         elif errorCode == 502:
-            logging.info("Ya existe una conexion con IB")
+            logging.error("Ya existe una conexion con IB")
             self.error_code = errorCode
             self.error_tickers = reqId
         elif errorCode == 503:
-            logging.info("Se necesita actualizar la plataforma")
+            logging.error("Se necesita actualizar la plataforma")
             self.error_code = errorCode
             self.error_tickers = reqId
         elif errorCode == 504:
-            logging.info("No conectado")
+            logging.error("No conectado")
             self.error_code = errorCode
             self.error_tickers = reqId
         elif not str(errorCode).startswith('21'):
-            logging.info(f"Error de TWS: {errorString}")
+            logging.error(f"Error de TWS: {errorString}")
             self.error_code = errorCode
             self.error_tickers = reqId
+        else:
+            logging.info(f"Mensaje del sistema: {errorString}")
