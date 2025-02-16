@@ -231,9 +231,6 @@ def train_model_dag():
                     logging.info(f'Incluyendo capa de salida {out_activation} con {predict_days} unidades')
                     model.add(keras.layers.Dense(units=predict_days, activation=out_activation))
                     
-                    logging.info(f'Compilando modelo con optimizador adam, funcion de perdida mape')
-                    model.compile(optimizer='adam', loss='mape', metrics=['mse', 'mae'])
-                    
                     cp_filename = f"model_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.keras"
                     base_path = Variable.get('model_path')
                     this_model = os.path.join(base_path, f'model_{ticker_code.lower()}_{count}')
@@ -254,7 +251,7 @@ def train_model_dag():
                                 os.remove(file_path)
                         
                     cp = keras.callbacks.ModelCheckpoint(cp_path, save_best_only=True, save_weights_only=False)
-                    model.compile(optimizer='adam', loss='mape', metrics=['mse', 'mape'])
+                    model.compile(optimizer='adam', loss='mse', metrics=['mae', 'mape'])
                     early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True)
                     
                     # Hacer fit del modelo actual
