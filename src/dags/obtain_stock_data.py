@@ -2,7 +2,7 @@ from utils.ibconnector import IBApi
 import pendulum
 from airflow.decorators import task, dag
 from airflow.models import Variable
-from airflow.exceptions import AirflowSkipException
+from airflow.exceptions import AirflowSkipException, AirflowFailException
 
 from utils.sqlconnector import SQLConnector
 
@@ -145,6 +145,12 @@ def stock_data_dag():
                 
                 count += 1
                 req_id = f"{ticker_id}{count}"
+            # Handling errores
+            if app.error_code==162 and app.error_tickers==req_id:
+                break
+            elif app.error_code is not None:
+                app.disconnect()
+                raise AirflowFailException
 
         app.disconnect()
         
