@@ -332,15 +332,16 @@ def train_model_dag():
                 
     @task(
         doc_md="""Task para envio de email con resultados""",
-        trigger_mode = 'all_done'
+        trigger_rule = "all_done"
     )
     def send_email():
         from airflow.operators.email import EmailOperator
         import zipfile
+        import json
         import os
         
         base_path = Variable.get('model_path')
-        destinataries = list(Variable.get('destinataries'))
+        destinataries = json.loads(Variable.get('model_destinataries'))
         zip_file = os.path.join(base_path, 'lstm_outputs.zip')
         
         # Generar zip
