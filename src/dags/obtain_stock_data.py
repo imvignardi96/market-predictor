@@ -113,7 +113,6 @@ def stock_data_dag():
         # Inicializacion de variables necesarias. el ID no puede ser UUID, debe ser un entero.
         execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
         count = 0
-        req_id = f"{ticker_id}{count}"
         
         logging.info("Parametros establecidos.")
 
@@ -124,6 +123,8 @@ def stock_data_dag():
             # Esperar a evento activo
             if app.data_ready_event.is_set():                
                 diff = start_date.diff(end_date).in_days()
+                count += 1
+                req_id = f"{ticker_id}{count}"
                 if diff>=366:
                     if not first_exec:
                         start_date = start_date-pendulum.duration(years=1)
@@ -142,11 +143,8 @@ def stock_data_dag():
                 app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
                     
                 execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
-                
-                count += 1
-                req_id = f"{ticker_id}{count}"
             # Handling errores
-            if app.error_code==162:
+            if app.error_code==162 and app.error_tickers==req_id:
                 break
             elif app.error_code is not None and app.error_tickers==req_id:
                 app.disconnect()
