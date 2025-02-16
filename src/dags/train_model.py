@@ -362,7 +362,7 @@ def train_model_dag():
         
         if count!=0:
             logging.info('Zip creado')
-            file = zip_file
+            file = [zip_file]
             html_file_path = os.path.join(contents_folder, "body.html")
 
             with open(html_file_path, "r", encoding="utf-8") as file:
@@ -381,7 +381,7 @@ def train_model_dag():
             to=destinataries,
             subject=f"Resultados LSTM {pendulum.now().strftime('%Y-%m-%d')}",
             html_content=html_content,
-            files=[file]
+            files=file
         )
         return email.execute({})
                     
