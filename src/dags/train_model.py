@@ -375,6 +375,7 @@ def train_model_dag():
             with open(html_file_path, "r", encoding="utf-8") as file:
                 html_content = file.read()
 
+        logging.info('Enviando email')
         email = EmailOperator(
             task_id='lstm_results',
             to=destinataries,
@@ -382,8 +383,7 @@ def train_model_dag():
             html_content=html_content,
             files=[file]
         )
-        
-        return email
+        return email.execute({})
                     
 
     tickers = get_tickers()
