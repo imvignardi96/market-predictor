@@ -13,7 +13,7 @@ import logging
     description='DAG para obtener los sentimientos de noticias',
     start_date=pendulum.datetime(2025, 1, 1, tz='UTC'),
     catchup=False,
-    max_active_tasks=3,
+    max_active_tasks=1,
     max_active_runs=1,
     schedule_interval='0 14 * * 6',  # A las 14:00 el sabado
     doc_md=
@@ -149,6 +149,7 @@ def train_model_dag():
             logging.info(f'Datos leidos del archivo temporal: {file_path}')
             
             stock_data.set_index('value_at', inplace=True)
+            stock_data.sort_index(inplace=True, ascending=True)
             stock_data['target'] = stock_data['closing_price'] # Clonar columna. Esta se utilizara para y
             stock_data.dropna(inplace=True)
             
