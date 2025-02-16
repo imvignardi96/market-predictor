@@ -341,7 +341,7 @@ def train_model_dag():
         import os
         
         base_path = Variable.get('model_path')
-        destinataries = json.loads(Variable.get('model_destinataries'))
+        destinataries = json.loads(Variable.get('model_destinataries'))['destinataries']
         zip_file = os.path.join(base_path, 'lstm_outputs.zip')
         
         # Generar zip
