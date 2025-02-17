@@ -313,7 +313,7 @@ def train_model_dag():
                     y_test = np.load(y_file_path)
                     
                     # Evaluacion del modelo
-                    test_loss = model.evaluate(X_test, y_test)
+                    test_loss = model.evaluate(X_test, y_test, verbose=0)
                     logging.info(f'Test Loss: {test_loss}')
                     
                     logging.info(f'Modelo evaluado')
@@ -328,6 +328,8 @@ def train_model_dag():
                         y_pred=y_pred,
                         model_path=os.path.join(base_path, directory, f'{model_file[0]}.png')
                     ) 
+                    
+                    plotter.close_figure()
                     
                     # Almacenamos el mejor modelo de cada metrica
                     if mape<curr_mape:
@@ -386,7 +388,7 @@ def train_model_dag():
             with open(html_file_path, "r", encoding="utf-8") as file:
                 html_content = file.read()
                 
-                html_content.replace(
+                html_content = html_content.replace(
                     "{change_me1}",
                     f"""Se ha detectado que los mejores modelos son:
                     <ul>

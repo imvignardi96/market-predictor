@@ -54,3 +54,6 @@ class LSTMPlotter:
         # En caso de querer mostrar la figura enn alguna situacion
         plt.tight_layout()
         plt.show()
+        
+    def close_figure(self):
+        plt.close()
