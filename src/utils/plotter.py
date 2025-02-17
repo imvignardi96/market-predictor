@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, mean_absolute_error, r2_score, root_mean_squared_error
+from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, r2_score
 
 class LSTMPlotter:
     def __init__(self):
@@ -14,7 +14,7 @@ class LSTMPlotter:
         # Computar metricas
         # 1. De error
         mse = mean_squared_error(y_test, y_pred)
-        mape = mean_absolute_percentage_error(y_test, y_pred)
+        mape = mean_absolute_percentage_error(y_test, y_pred)*100
 
         # 2. De precision direccional
         directional_accuracy = (np.mean((np.sign(np.diff(y_test)) == np.sign(np.diff(y_pred))).astype(int)))*100
@@ -42,13 +42,13 @@ class LSTMPlotter:
         \nR²: {r2:.4f}
         \nPearson: {pearson_corr:.4f}
         """
-        plt.text(2, max(y_test) * 0.995, metrics_text, fontsize=18, color='black', 
+        plt.text(2, max(y_test) * 0.99, metrics_text, fontsize=18, color='black', 
                 bbox=dict(facecolor='white', alpha=0.6))
 
         # Show plot
         plt.savefig(model_path)
         
-        return mape, directional_accuracy, r2
+        return mape, directional_accuracy, r2, mse
             
     def show(self):
         # En caso de querer mostrar la figura enn alguna situacion
