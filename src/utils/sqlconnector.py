@@ -7,7 +7,7 @@ import math
 @dataclass
 class SQLConnector:
     dialect:str = 'mysql'
-    driver:str = 'mysqldb'
+    driver:str = 'pymysql'
     host:str = '192.168.1.51'
     port:str = '3306'
     database:str = 'market_predictor'
@@ -21,7 +21,7 @@ class SQLConnector:
         self.connection = sa.create_engine(self.url, echo=True)
         # Inicializar metadatos
         self.metadata = sa.MetaData(bind=self.connection)
-        self.metadata.reflect()  # Reflects existing tables in the database
+        self.metadata.reflect(views=True)  # Reflects existing tables in the database
         
     def _get_metadata(self, table_name:str):
         if table_name not in self.metadata.tables:
