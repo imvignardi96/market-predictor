@@ -286,9 +286,13 @@ def train_model_dag():
         import os
         
         base_path = Variable.get('model_path')
+        best_models = {}
         directories = [d for d in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, d))]
         plotter = LSTMPlotter()
         
+        curr_mape=100000
+        curr_dir=100000
+        curr_r2=-100000
         for directory in directories:
             logging.info(f'Inspeccionando directorio {os.path.join(base_path, directory)}')
             
@@ -319,22 +323,36 @@ def train_model_dag():
                     
                     logging.info(f'Predicciones realizadas')    
                     
-                    plotter.add_plot(
+                    mape, direccional, r2 = plotter.add_plot(
                         y_test=y_test,
                         y_pred=y_pred,
                         model_path=os.path.join(base_path, directory, f'{model_file[0]}.png')
                     ) 
+                    
+                    # Almacenamos el mejor modelo de cada metrica
+                    if mape<curr_mape:
+                        curr_mape=mape
+                        best_models['mape']={"file":model_file[0], "result":mape}
+                    if direccional<curr_dir:
+                        curr_dir=direccional
+                        best_models['da']={"file":model_file[0], "result":direccional}
+                    if r2>curr_r2:
+                        curr_r2=r2
+                        best_models['r2']={"file":model_file[0], "result":r2}
+                        
                 except Exception as e:
                     logging.error(f"Error en carga de modelo o creacion de predicciones: {e}")
                     raise AirflowFailException                
             else:
                 logging.warning('Archivos para modelo no encontrados')
                 
+        return best_models
+                
     @task(
         doc_md="""Task para envio de email con resultados""",
         trigger_rule = "all_done"
     )
-    def send_email():
+    def send_email(best_models):
         from airflow.operators.email import EmailOperator
         import zipfile
         import json
@@ -367,6 +385,15 @@ def train_model_dag():
 
             with open(html_file_path, "r", encoding="utf-8") as file:
                 html_content = file.read()
+                
+                html_content.replace(
+                    "{change_me1}",
+                    f"""Se ha detectado que los mejores modelos son:
+                    <ul>
+                        <li>MAPE: {best_models['mape']['file']} con resultado de {best_models['mape']['result']}%</li>
+                        <li>DA: {best_models['da']['file']} con resultado de {best_models['da']['result']}%</li>
+                        <li>R2: {best_models['r2']['file']} con resultado de {best_models['r2']['result']}%</li>
+                    </ul>""")
         else:
             logging.error('No se encontraron resultados')
             send_file = None
@@ -390,8 +417,8 @@ def train_model_dag():
     dictionary = get_data.expand(ticker=tickers)
     model_gen = generate_models.expand(ticker_dict=dictionary)
     predictions_gen = generate_predictions()
-    send_results = send_email()
+    send_email(predictions_gen)
     
-    model_gen >> predictions_gen >> send_results
+    model_gen >> predictions_gen
     
 model_instance = train_model_dag()

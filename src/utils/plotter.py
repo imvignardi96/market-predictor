@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error
+from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, mean_absolute_error, r2_score, root_mean_squared_error
 
 class LSTMPlotter:
     def __init__(self):
@@ -12,9 +12,17 @@ class LSTMPlotter:
         y_pred = np.ravel(y_pred)
     
         # Computar metricas
-        mape = mean_absolute_percentage_error(y_test, y_pred) * 100
+        # 1. De error
         mse = mean_squared_error(y_test, y_pred)
-        rmse = np.sqrt(mse)
+        mape = mean_absolute_percentage_error(y_test, y_pred)
+
+        # 2. De precision direccional
+        directional_accuracy = np.mean((np.sign(np.diff(y_test)) == np.sign(np.diff(y_pred))).astype(int))
+
+        # 3. De correlacion
+        r2 = r2_score(y_test, y_pred)
+        pearson_corr = np.corrcoef(y_test, y_pred)[0, 1]
+
 
         # Graficar resultados
         plt.figure(figsize=(30, 20))
@@ -28,12 +36,19 @@ class LSTMPlotter:
         plt.legend(fontsize=14)
 
         # Mostrar metricas principales
-        metrics_text = f"MAPE: {mape:.2f}%\nRMSE: {rmse:.2f}\nMSE: {mse:.2f}"
+        metrics_text = f"""MAPE: {mape:.2f}%
+        \nMSE: {mse:.2f}
+        \nDA: {directional_accuracy:.2f}%
+        \nR²: {r2:.4f}
+        \nPearson: {pearson_corr:.4f}
+        """
         plt.text(2, max(y_test) * 0.995, metrics_text, fontsize=18, color='black', 
                 bbox=dict(facecolor='white', alpha=0.6))
 
         # Show plot
         plt.savefig(model_path)
+        
+        return mape, directional_accuracy, r2
             
     def show(self):
         # En caso de querer mostrar la figura enn alguna situacion
