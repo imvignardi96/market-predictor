@@ -301,6 +301,7 @@ def train_model_dag():
         curr_mape=100000
         curr_dir=-100000
         curr_r2=-100000
+        curr_mse=100000
         for directory in directories:
             logging.info(f'Inspeccionando directorio {os.path.join(base_path, directory)}')
             
