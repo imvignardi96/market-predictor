@@ -327,9 +327,9 @@ def train_model_dag():
                     y_pred = model.predict(X_test, verbose=0)    
                     
                     logging.info(f"Forma inicial de y: {y_test.shape}")
-                    logging.info(f"Forma del scaler: {fitted_scaler.scale_.shape}")
+                    logging.info(f"Forma del scaler: {fitted_scaler.data_max_.shape}")
                     
-                    n_zero_cols = fitted_scaler.scale_.shape[1] - y_test.shape[1]
+                    n_zero_cols = fitted_scaler.scale_.shape[0] - y_test.shape[1]
                     
                     # Invertir transformacion
                     zeros = np.zeros((y_test.shape[0], n_zero_cols))
