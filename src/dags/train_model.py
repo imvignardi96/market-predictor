@@ -313,7 +313,7 @@ def train_model_dag():
                     y_test = np.load(y_file_path)
                     
                     # Evaluacion del modelo
-                    test_loss = model.evaluate(X_test, y_test)
+                    test_loss = model.evaluate(X_test, y_test, verbose=0)
                     logging.info(f'Test Loss: {test_loss}')
                     
                     logging.info(f'Modelo evaluado')
