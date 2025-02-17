@@ -333,8 +333,12 @@ def train_model_dag():
                     y_pred = model.predict(X_test, verbose=0)    
                     
                     # Invertir transformacion
-                    y_test_real = fitted_scaler.inverse_transform(y_test.reshape(-1,1))
-                    y_pred_real = fitted_scaler.inverse_transform(y_pred.reshape(-1,1))
+                    zeros = np.zeros((y_test.shape[0], 4))
+                    y_test_expanded = np.hstack((y_test.reshape(-1, 1), zeros))
+                    y_pred_expanded = np.hstack((y_pred.reshape(-1, 1), zeros))
+                    
+                    y_test_real = fitted_scaler.inverse_transform(y_test_expanded)[0]
+                    y_pred_real = fitted_scaler.inverse_transform(y_pred_expanded)[0]
                     
                     logging.info(f'Predicciones realizadas')    
                     
