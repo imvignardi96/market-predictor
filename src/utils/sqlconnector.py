@@ -7,7 +7,7 @@ import math
 @dataclass
 class SQLConnector:
     dialect:str = 'mysql'
-    driver:str = 'mysqlclient'
+    driver:str = 'mysqldb'
     host:str = '192.168.1.51'
     port:str = '3306'
     database:str = 'market_predictor'
