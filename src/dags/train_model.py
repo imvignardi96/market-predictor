@@ -291,7 +291,7 @@ def train_model_dag():
         plotter = LSTMPlotter()
         
         curr_mape=100000
-        curr_dir=100000
+        curr_dir=-100000
         curr_r2=-100000
         for directory in directories:
             logging.info(f'Inspeccionando directorio {os.path.join(base_path, directory)}')
@@ -335,7 +335,7 @@ def train_model_dag():
                     if mape<curr_mape:
                         curr_mape=mape
                         best_models['mape']={"file":model_file[0], "result":mape}
-                    if direccional<curr_dir:
+                    if direccional>curr_dir:
                         curr_dir=direccional
                         best_models['da']={"file":model_file[0], "result":direccional}
                     if r2>curr_r2:
@@ -392,9 +392,9 @@ def train_model_dag():
                     "{change_me1}",
                     f"""Se ha detectado que los mejores modelos son:
                     <ul>
-                        <li>MAPE: {best_models['mape']['file']} con resultado de {best_models['mape']['result']}%</li>
-                        <li>DA: {best_models['da']['file']} con resultado de {best_models['da']['result']}%</li>
-                        <li>R2: {best_models['r2']['file']} con resultado de {best_models['r2']['result']}%</li>
+                        <li>MAPE: {best_models['mape']['file']} con resultado de {float(best_models['mape']['result']):.2f}%</li>
+                        <li>DA: {best_models['da']['file']} con resultado de {float(best_models['da']['result']):.2f}%</li>
+                        <li>R2: {best_models['r2']['file']} con resultado de {float(best_models['r2']['result']):.4f}</li>
                     </ul>""")
         else:
             logging.error('No se encontraron resultados')
