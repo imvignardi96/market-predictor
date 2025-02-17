@@ -97,6 +97,7 @@ def train_model_dag():
         import keras
         from sklearn.preprocessing import MinMaxScaler
         import numpy as np
+        import joblib
         import warnings
         
         warnings.filterwarnings('ignore')
@@ -150,7 +151,6 @@ def train_model_dag():
             stock_data.set_index('value_at', inplace=True)
             stock_data.sort_index(inplace=True, ascending=True)
             stock_data['target'] = stock_data['closing_price'] # Clonar columna. Esta se utilizara para y
-            stock_data.dropna(inplace=True)
             
             logging.info(f'Pretratamiento realizado')
             
@@ -180,13 +180,14 @@ def train_model_dag():
                 features = base_columns+combination            
             
                 df = stock_data[features].copy()  # Obtenemos el df con las features que queremos
+                df.dropna(inplace=True) # Ahora se eliminan las filas con Nan
                 
                 train_split = int(train_scaler * len(df))  # Training set size
                 val_split = int(validation_scaler * len(df))  # Validation set size
                 
                 scaler = MinMaxScaler(feature_range=(0, 1))
 
-                df_scaled = mm.scale_dataframe(scaler, train_split, val_split, df, features)
+                df_scaled, scaler = mm.scale_dataframe(scaler, train_split, val_split, df, features)
                 
                 logging.info(f'Dataframe escalado: {df_scaled.iloc[1].values}')
                 
@@ -198,6 +199,7 @@ def train_model_dag():
                 X_train, X_val, X_test, y_train, y_val, y_test = mm.obtain_split(X, y, train_scaler, validation_scaler)
                 
                 logging.info(f'Datos listos: {X_train[0]}')
+                logging.info(f'Forma datos test: {X_test.shape}')
                 
                 ####################################################
                 ############## Generador de modelos ################
@@ -264,6 +266,10 @@ def train_model_dag():
                     y_test_filename = f"y_test_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.npy"
                     y_path = os.path.join(this_model, y_test_filename)
                     np.save(y_path, y_test)
+                    
+                    scaler_filename = f"scaler_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.pkl"
+                    scaler_path = os.path.join(this_model, scaler_filename)
+                    joblib.dump(scaler, scaler_path)
                                         
                     count+=1
                        
@@ -282,6 +288,8 @@ def train_model_dag():
     def generate_predictions():
         import keras
         import numpy as np
+        import joblib
+        from sklearn.preprocessing import MinMaxScaler
         from utils.plotter import LSTMPlotter
         import os
         
@@ -299,18 +307,21 @@ def train_model_dag():
             model_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.endswith('.keras')]
             X_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('x_test')]
             y_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('y_test')]
+            scaler_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('scaler')]
             
-            if model_file and X_file and y_file:
+            if model_file and X_file and y_file and scaler_file:
                 try:
                     model_file_path = os.path.join(base_path, directory, model_file[0])
                     X_file_path = os.path.join(base_path, directory, X_file[0])
                     y_file_path = os.path.join(base_path, directory, y_file[0])
+                    scaler_file_path = os.path.join(base_path, directory, scaler_file[0])
 
                     
                     # Carga mejor modelo
                     model:keras.Sequential = keras.models.load_model(model_file_path)
                     X_test = np.load(X_file_path)
                     y_test = np.load(y_file_path)
+                    fitted_scaler:MinMaxScaler = joblib.load(scaler_file_path)
                     
                     # Evaluacion del modelo
                     test_loss = model.evaluate(X_test, y_test, verbose=0)
@@ -319,7 +330,11 @@ def train_model_dag():
                     logging.info(f'Modelo evaluado')
                     
                     # Predicciones del modelo
-                    y_pred = model.predict(X_test)    
+                    y_pred = model.predict(X_test, verbose=0)    
+                    
+                    # Invertir transformacion
+                    y_test_real = fitted_scaler.inverse_transform(y_test.reshape(-1,1))
+                    y_pred_real = fitted_scaler.inverse_transform(y_pred.reshape(-1,1))
                     
                     logging.info(f'Predicciones realizadas')    
                     

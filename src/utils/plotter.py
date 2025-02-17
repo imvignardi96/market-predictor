@@ -17,7 +17,7 @@ class LSTMPlotter:
         mape = mean_absolute_percentage_error(y_test, y_pred)
 
         # 2. De precision direccional
-        directional_accuracy = np.mean((np.sign(np.diff(y_test)) == np.sign(np.diff(y_pred))).astype(int))
+        directional_accuracy = (np.mean((np.sign(np.diff(y_test)) == np.sign(np.diff(y_pred))).astype(int)))*100
 
         # 3. De correlacion
         r2 = r2_score(y_test, y_pred)
