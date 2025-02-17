@@ -388,7 +388,7 @@ def train_model_dag():
             with open(html_file_path, "r", encoding="utf-8") as file:
                 html_content = file.read()
                 
-                html_content.replace(
+                html_content = html_content.replace(
                     "{change_me1}",
                     f"""Se ha detectado que los mejores modelos son:
                     <ul>
