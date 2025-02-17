@@ -45,15 +45,16 @@ class SQLConnector:
         table = self._get_metadata(table_name)
         
         with self.connection.connect() as conn:
-            # Create the insert statement
+            # Se crea el insert
             stmt = sa.insert(table).values(data)
             
-            # Use prefix_with to add the 'IGNORE' keyword for MySQL
+            # Si se indica DUPLICATE entonces se ejecuta un on duplicate update
             if 'DUPLICATE' in prefix:
                 stmt = stmt.on_duplicate_key_update(
                     data=stmt.inserted.data,
                     status='U'
                 )
+            # En caso contrario se utilizara el prefijo proporcionado el cual puede ser '' para no usar prefijo
             else:
                 stmt = stmt.prefix_with(prefix)
             
@@ -98,21 +99,20 @@ class SQLConnector:
 
     def read_data(self, table_name: str, conditions: dict = None, index_col: str = None) -> pd.DataFrame:
         """
-        Reads data from the specified table in the database.
+        Lee los datos de una tabla
 
-        Args:
-            table_name (str): Name of the table to read data from.
-            conditions (dict, optional): Dictionary with column conditions. 
-                                        Supports tuples for operations, e.g., {"col": (">", value)}.
-            index_col (str, optional): Column to be used as DataFrame index.
+        -**Args**:
+            table_name (str): Nombre de la tabla a leer
+            conditions (dict, optional): Diccionario con las condiciones WHERE, acepta tuplas para indicar el tipo de operacion.
+            index_col (str, optional): Columna a usar como indice
 
-        Returns:
+        -**Returns**:
             pandas.DataFrame: DataFrame with the filtered data.
         """
 
         table = self._get_metadata(table_name)
 
-        # Build the query
+        # Construir query
         query = table.select()
         if conditions:
             filters = []
@@ -133,7 +133,7 @@ class SQLConnector:
                         filters.append(table.c[column] != value)
                     else:
                         raise ValueError(f"Operacion no soportada: {op}")
-                else:  # Default to '=' if no operator is specified
+                else:  # Utilizar = por defecto
                     filters.append(table.c[column] == condition)
 
             query = query.where(and_(*filters))
@@ -155,7 +155,7 @@ class SQLConnector:
     
     def custom_query(self, query:str) -> pd.DataFrame:
         """
-        Ejecuta unna query customizada en lenguaje MySQL.
+        Ejecuta una query customizada en lenguaje MySQL.
 
         Args:
             query (str): Query a ejecutar. Se connvierte a formato text.
@@ -170,7 +170,7 @@ class SQLConnector:
         custom_query = sa.text(query)
         # Execute the query and fetch the results
         with self.connection.connect() as conn:
-            result = conn.execute(query)
+            result = conn.execute(custom_query)
             df = pd.DataFrame(result.fetchall(), columns=result.keys())
 
         return df

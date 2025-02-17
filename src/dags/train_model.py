@@ -1,7 +1,7 @@
 from utils.sqlconnector import SQLConnector
 import utils.modelmethods as mm
 from airflow.decorators import task, dag
-from airflow.exceptions import AirflowException, AirflowSkipException, AirflowFailException
+from airflow.exceptions import AirflowFailException
 from airflow.models import Variable
 import pandas as pd
 import pendulum
@@ -10,7 +10,7 @@ import logging
 # Dag
 @dag(
     dag_id='train_model',
-    description='DAG para obtener los sentimientos de noticias',
+    description='DAG para el entrenamiento de modelos',
     start_date=pendulum.datetime(2025, 1, 1, tz='UTC'),
     catchup=False,
     max_active_tasks=3,
@@ -18,11 +18,44 @@ import logging
     schedule_interval='0 14 * * 6',  # A las 14:00 el sabado
     doc_md=
     """
-        #### Documentacion Model Trainer.
+        #### Documentacion Entrenamiento de Modelos BiLSTM/LSTM.
+
+        El DAG se encarga de entrenar múltiples modelos BiLSTM/LSTM en paralelo, permitiendo visualizar rápidamente diversos resultados y facilitando la selección del modelo más adecuado para el usuario.
+
+        ##### Configuración de Variables
+
+        Las variables de Airflow que comienzan con `model_` en la sección de variables controlan las opciones de entrenamiento de este DAG. Entre ellas destacan:
+
+        - **Complejidad máxima de las capas**  
+        - **Número máximo de capas**  
+        - **Tamaño del batch**  
+        - **Otros hiperparámetros ajustables**  
+
+        La mayoría de estos parámetros pueden configurarse desde la interfaz gráfica (GUI), incluyendo la opción de activar o desactivar una capa de *dropout*.
+
+        ##### Flujo de Actividades
+
+        Las actividades que conforman el DAG son las siguientes:
+
+        1. **Lectura de tickers**  
+        Obtiene los datos de las empresas marcadas como activas en la base de datos.  
+
+        2. **Obtención de datos**  
+        Recupera la información desde la base de datos MySQL, con un volumen configurable de datos.  
+
+        3. **Generación de modelos**  
+        Construye los modelos en función de las variables definidas.  
+
+        4. **Cálculo de métricas y visualización**  
+        Extrae las principales métricas de rendimiento para facilitar la selección del mejor modelo.  
+
+        5. **Envío de resultados**  
+        Envía un correo con los modelos más destacados en cada métrica y sus respectivos resultados.  
+
     """
 )
 def train_model_dag():
-    
+    # Variables de base de datos
     db_user = Variable.get('db_user')
     db_pwd = Variable.get('db_password')
                          
@@ -31,7 +64,7 @@ def train_model_dag():
     @task(
         doc_md=
         """
-            Esta tarea obtiene los tickers necesarios para el scraping.
+            Esta tarea obtiene los tickers necesarios para el entrenamiento.
             
             -**Returns**:
                 -active_tickers: Lista de diccionarios con los tickers activos.
@@ -53,17 +86,26 @@ def train_model_dag():
             El uso del modulo temp_files tiene sus beneficios. Cuando Linux reinicie se eliminan
             si por cualquier casual quedaron pendientes de borrar.
             
-            En este caso concreto queremos que se borren automaticamente.
+            En este caso concreto queremos que se borren en el reinicio del sistema pero no automaticamente.
+            Si se borrasen automaticamente, al cambiar de task el archivo se cerraria y se perderia.
+            
+            -**Args**:
+                -ticker: Diccionario que contiene el id del ticker y su nombre. Se utiliza para saber que datos extraer
+            
+            -**Returns**:
+                -ticker_dict: Diccionnario con nombre de ticker y su archivo asociado.
         """
     )
     def get_data(ticker):
         import tempfile
         
+        # Retornamos el numero de meses de datos que se van a extraer de MySQL
         depth = int(Variable.get('model_data_depth'))
 
-        if depth<=0:
-            raise ValueError('Invalid data depth. Check Airflow variable "model_data_depth"')
+        if depth<1:
+            raise ValueError('Profunidad de datos invalida. Compruebe "model_data_depth"')
         
+        # Obtenemos la fecha en concreto de hace "depth" meses
         data_depth = pendulum.now().subtract(months=depth).date()
         logging.info(f'Meses de profundidad: {depth}')
         logging.info(f'Extraccion a partir de fecha: {data_depth}')
@@ -89,7 +131,14 @@ def train_model_dag():
     @task(
         doc_md=
         """
-            Esta tarea lee el archivo temporal y genera el modelo
+            Esta tarea lee el archivo temporal generado con NamedTemporaryFile y crea todos los modelos.
+            
+            La actividad es dependiente de numerosas variables que se definen en la interfaz de Airflow. 
+            Por ello el control de los modelos generados es dependiente del conocimiento de los hyperparametros
+            que se pueden aplicar sobre un modelo de redes neuronales.
+            
+            -**Args**:
+                - ticker_dict: Diccionnario con nombre de ticker y el archivo que contiene sus datos.       
         """
     )
     def generate_models(ticker_dict):
@@ -159,11 +208,16 @@ def train_model_dag():
             #############################################################
             
             # Features a utilizar. Se ha definido un minimo de 3 features y un maximo de 4.
-            # El valor de macd es redundante
-            variable_columns = ['opening_price', 'obv', ('aroon_up', 'aroon_down'), 'macd_hist', 'rsi']
+            # El valor de macd es redundante, macd_hist contiene la informacion necesaria
+            max_combinations = int(Variable.get('model_max_combinations'))
+            variable_columns = ['opening_price', 'obv', ('aroon_up', 'aroon_down'), 'macd_hist', 'rsi'] # La tupla indica que son "una unica" feature
+            
+            assert max_combinations>0 and max_combinations<=len(variable_columns)
+            
             base_columns = ['closing_price', 'target'] # El target se debe eliminar de X mas adelante
             
-            combination_columns = mm.generate_features(variable_columns)
+            # Se obtienen todas las combinaciones posibles a utilizar
+            combination_columns = mm.generate_features(variable_columns, max_combinations)
             
             logging.info(f'Combinacion de features generada')
             
@@ -187,10 +241,12 @@ def train_model_dag():
                 
                 scaler = MinMaxScaler(feature_range=(0, 1))
 
+                # Escalamos el dataframe y retornamos el scaler conn el fit para guardarlo posteriormente
                 df_scaled, scaler = mm.scale_dataframe(scaler, train_split, val_split, df, features)
                 
                 logging.info(f'Dataframe escalado: {df_scaled.iloc[1].values}')
                 
+                # Creamos las secuencias en funcion del numero de dias que queremos utilizar para predecir
                 X, y = mm.create_sequences(df_scaled, lookback, predict_days)
                 
                 logging.info(f'Secuencias creadas: {X[0]}')
@@ -205,13 +261,17 @@ def train_model_dag():
                 ############## Generador de modelos ################
                 ####################################################
                 for n_layers in range(1, len(complexities)+1):
+                    # Obtenemos las layers a utilizar
                     to_use = complexities[:n_layers]
                     
                     logging.info(f'Generando modelo {count}, complejidades {to_use} y features {features} para el ticker {ticker_code.upper()}')
                     
+                    # Modelo de tipo secuencial
                     model = keras.Sequential()
                     model.add(keras.layers.InputLayer(input_shape=(X_train.shape[1], X_train.shape[2]))) # Indicar shape con las features
                     for idx, units in enumerate(to_use):
+                        
+                        # Decidir en funcion de variable airflow si usar capas bidireccionales o no
                         if is_bidirectional:
                             logging.info(f'Incluyendo capa BiLSTM {int_activation} de complejidad {units}')
                             if idx==n_layers-1:
@@ -225,19 +285,23 @@ def train_model_dag():
                             else:
                                 model.add(keras.layers.LSTM(units, activation=int_activation, return_sequences=True))
                     
+                    # Incluir capa dropout si no se asignnno 0
                     if dropout_rate!=0:
                         logging.info(f'Incluyendo capa Dropout con proporcion {dropout_rate}')
                         model.add(keras.layers.Dropout(dropout_rate))
-                        
+                    
+                    # Incluir capa dense de salida
                     logging.info(f'Incluyendo capa de salida {out_activation} con {predict_days} unidades')
                     model.add(keras.layers.Dense(units=predict_days, activation=out_activation))
                     
+                    # Definir el modelo a guardar para despues recuperarlo
                     cp_filename = f"model_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.keras"
                     base_path = Variable.get('model_path')
                     this_model = os.path.join(base_path, f'model_{ticker_code.lower()}_{count}')
                     
                     logging.info(f'Creando directorio: {this_model}')
                     
+                    # Crear directorio si no existe
                     os.makedirs(this_model, exist_ok=True) # Crear si no existe
                     cp_path = os.path.join(this_model, cp_filename)
                     
@@ -250,9 +314,12 @@ def train_model_dag():
                             if os.path.isfile(file_path):
                                 logging.info(f'Eliminando archivo {file_name} en {this_model}')
                                 os.remove(file_path)
-                        
+                    
+                    # Inicializar el checkpoint. Se guardara el modelo con menor perdida.
                     cp = keras.callbacks.ModelCheckpoint(cp_path, save_best_only=True, save_weights_only=False)
+                    # Utilizar optimizador adam y funcion de perdida mse
                     model.compile(optimizer='adam', loss='mse', metrics=['mae', 'mape'])
+                    # Inicializar el early stopper
                     early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True)
                     
                     # Hacer fit del modelo actual
@@ -267,12 +334,12 @@ def train_model_dag():
                     y_path = os.path.join(this_model, y_test_filename)
                     np.save(y_path, y_test)
                     
+                    # Guardar el minmax scaler
                     scaler_filename = f"scaler_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}_{n_layers}.pkl"
                     scaler_path = os.path.join(this_model, scaler_filename)
                     joblib.dump(scaler, scaler_path)
                                         
-                    count+=1
-                       
+                    count+=1  
                     
         except AssertionError as e:
             logging.error(f'Una o mas variables tienen un valor erroneo: {str(e)}')
@@ -281,7 +348,14 @@ def train_model_dag():
     @task(
         doc_md=
         """
-            Esta tarea lee el archivo temporal y genera el modelo
+            Esta tarea genera las predicciones y computa algunas de las metricas de mayor valor en
+            la prediccion de series temporales.
+            
+            Para poder llevarlo acabo se lee de forma secuencial todas las carpetas de los modelos.
+            Cada una de ellas contiene los datos necesarios para poder computar las predicciones y graficar los
+            resultados correctamente.
+            
+            Requiere: Un scaler, un subconjunto X_test, un subconjunto y_test y un modelo .keras
         """,
         trigger_rule='all_done'
     )
@@ -293,23 +367,30 @@ def train_model_dag():
         from utils.plotter import LSTMPlotter
         import os
         
+        # Obtener todos los subdirectorios. Cada uno contiene un modelo
         base_path = Variable.get('model_path')
         best_models = {}
         directories = [d for d in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, d))]
         plotter = LSTMPlotter()
         
+        # Inicializacion de variables sobre un valor absurdo.
         curr_mape=100000
         curr_dir=-100000
         curr_r2=-100000
         curr_mse=100000
+        
+        # Se itera cada directorio. En este debe existir un modelo, un scaler, X_test e y_test.
+        # Si no existe se pasa al siguiente modelo por falta de datos.
         for directory in directories:
             logging.info(f'Inspeccionando directorio {os.path.join(base_path, directory)}')
             
+            # Se obtiene cada archivo por separado
             model_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.endswith('.keras')]
             X_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('x_test')]
             y_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('y_test')]
             scaler_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('scaler')]
             
+            # Si se encuentran todos los archivos se procesa
             if model_file and X_file and y_file and scaler_file:
                 try:
                     model_file_path = os.path.join(base_path, directory, model_file[0])
@@ -330,26 +411,30 @@ def train_model_dag():
                     logging.info(f"Forma inicial de y: {y_test.shape}")
                     logging.info(f"Forma del scaler: {fitted_scaler.data_max_.shape}")
                     
+                    # Se obtiene el numero de columnas que haran falta para poder usar el scaler nuevamente
                     n_zero_cols = fitted_scaler.scale_.shape[0] - y_test.shape[1]
                     
-                    # Invertir transformacion
+                    # Invertir transformacion agregando columnas con ceros
                     zeros = np.zeros((y_test.shape[0], n_zero_cols))
                     y_test_expanded = np.hstack((y_test, zeros))
                     y_pred_expanded = np.hstack((y_pred, zeros))
                     
                     logging.info(f"Nueva forma de y: {y_test_expanded.shape}")
                     
+                    # Obtencion de los valores reales
                     y_test_real = fitted_scaler.inverse_transform(y_test_expanded)[:, 0]
                     y_pred_real = fitted_scaler.inverse_transform(y_pred_expanded)[:, 0]
                     
                     logging.info(f'Predicciones realizadas')    
                     
+                    # Graficado y obtencion de las metricas principales
                     mape, direccional, r2, mse = plotter.add_plot(
                         y_test=y_test_real,
                         y_pred=y_pred_real,
                         model_path=os.path.join(base_path, directory, f'{model_file[0]}.png')
                     ) 
                     
+                    # Cerramos la figura para evitar consumo de memoria.
                     plotter.close_figure()
                     
                     # Almacenamos el mejor modelo de cada metrica
@@ -384,6 +469,7 @@ def train_model_dag():
         import json
         import os
         
+        # Se obtiene la lista de destinatarios y se define el path al zip que almacenara los graficos
         base_path = Variable.get('model_path')
         destinataries = json.loads(Variable.get('model_destinataries'))['destinataries']
         zip_file = os.path.join(base_path, 'lstm_outputs.zip')
@@ -404,6 +490,7 @@ def train_model_dag():
         dag_folder = os.path.dirname(os.path.abspath(__file__))
         contents_folder = os.path.abspath(os.path.join(dag_folder, "..", "contents"))
         
+        # Si algun archivo se incluyo enn el zip se manda un mennsaje de exito, aunque fuese parcial.
         if count!=0:
             logging.info('Zip creado')
             send_file = [zip_file]
@@ -412,6 +499,7 @@ def train_model_dag():
             with open(html_file_path, "r", encoding="utf-8") as file:
                 html_content = file.read()
                 
+                # Se muta el texto para incluir los mejores modelos en cada metrica
                 html_content = html_content.replace(
                     "{change_me1}",
                     f"""Se ha detectado que los mejores modelos son:
@@ -421,6 +509,7 @@ def train_model_dag():
                         <li><b>R2:</b> {best_models['r2']['file']} con resultado de {float(best_models['r2']['result']):.4f}</li>
                         <li><b>MSE:</b> {best_models['mse']['file']} con resultado de {float(best_models['mse']['result']):.4f}</li>
                     </ul>""")
+        # Si no se inncluyo ningun archivo se manda un email de error.
         else:
             logging.error('No se encontraron resultados')
             send_file = None
@@ -439,7 +528,7 @@ def train_model_dag():
         )
         return email.execute({})
                     
-
+    # Se define el orden de las actividades
     tickers = get_tickers()
     dictionary = get_data.expand(ticker=tickers)
     model_gen = generate_models.expand(ticker_dict=dictionary)
@@ -447,5 +536,6 @@ def train_model_dag():
     send_email(predictions_gen)
     
     model_gen >> predictions_gen
-    
+
+# Se instancia el dag
 model_instance = train_model_dag()
