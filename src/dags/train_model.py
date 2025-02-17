@@ -392,9 +392,9 @@ def train_model_dag():
                     "{change_me1}",
                     f"""Se ha detectado que los mejores modelos son:
                     <ul>
-                        <li>MAPE: {best_models['mape']['file']} con resultado de {float(best_models['mape']['result']):.2f}%</li>
-                        <li>DA: {best_models['da']['file']} con resultado de {float(best_models['da']['result']):.2f}%</li>
-                        <li>R2: {best_models['r2']['file']} con resultado de {float(best_models['r2']['result']):.4f}</li>
+                        <li><b>MAPE:</b> {best_models['mape']['file']} con resultado de {float(best_models['mape']['result']):.2f}%</li>
+                        <li><b>DA:</b> {best_models['da']['file']} con resultado de {float(best_models['da']['result']):.2f}%</li>
+                        <li><b>R2:</b> {best_models['r2']['file']} con resultado de {float(best_models['r2']['result']):.4f}</li>
                     </ul>""")
         else:
             logging.error('No se encontraron resultados')
