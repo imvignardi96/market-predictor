@@ -13,11 +13,11 @@ def create_sequences(data:DataFrame, lookback=60, forecast_horizon=2):
     target_data = data['target'].copy()
     logging.info(f'Features: {feature_data.columns}')
 
-    for i in range(lookback, len(data) - forecast_horizon + 1):  # Prevent index out of range
-        sequences.append(feature_data.iloc[i - lookback:i].values)  # Input sequence of past 'lookback' days
-        targets.append(target_data.iloc[i:i + forecast_horizon].values)  # Predict next 2 days
+    for i in range(lookback, len(data) - forecast_horizon + 1):
+        sequences.append(feature_data.iloc[i - lookback:i].values)  # Sequencias con una profundidad de N dias
+        targets.append(target_data.iloc[i:i + forecast_horizon].values)  # Predecir N dias
     
-    return np.array(sequences), np.array(targets)  # Targets will now have shape (samples, 2)
+    return np.array(sequences), np.array(targets) 
 
 def obtain_split(X, y, training_scaler, validation_scaler) -> np.ndarray:
     # Calcular indices separacion
@@ -38,26 +38,26 @@ def obtain_split(X, y, training_scaler, validation_scaler) -> np.ndarray:
 def scale_dataframe(scaler:MinMaxScaler, train_split:int, val_split:int, df:DataFrame, features:list):
     df_scaled = df.copy()
     
-    # Get the actual DateTime indices for training, validation, and test splits
-    train_index = df.index[:train_split]  # First part for training
-    val_index = df.index[train_split:train_split+val_split]  # Validation set
-    test_index = df.index[train_split+val_split:]  # Remaining test set
+    # Se obtienen los indices sobre los cuales hacer el fit y/o transformaciones
+    train_index = df.index[:train_split]  # Parte de entrenamiento
+    val_index = df.index[train_split:train_split+val_split]  # Parte de validacion
+    test_index = df.index[train_split+val_split:]  # Parte de test
 
-    # Fit the scaler on the training set only
+    # Hacer fit del escalador sobre datos de entrenamiento
     scaler.fit(df.loc[train_index, features])
 
-    # Transform and reassign values
-    df_scaled.loc[train_index, features] = scaler.transform(df.loc[train_index, features])
-    df_scaled.loc[val_index, features] = scaler.transform(df.loc[val_index, features])
-    df_scaled.loc[test_index, features] = scaler.transform(df.loc[test_index, features])
+    # Transformar los datos
+    df_scaled.loc[train_index, features] = scaler.transform(df.loc[train_index, features]) # Entrenamiento
+    df_scaled.loc[val_index, features] = scaler.transform(df.loc[val_index, features]) # Validacion
+    df_scaled.loc[test_index, features] = scaler.transform(df.loc[test_index, features]) # Test
     
     return df_scaled, scaler
 
 
-def generate_features(variable_features):
+def generate_features(variable_features, max_combination):
     # Generar solo dos combinaciones de features
     all_combinations = []
-    for combo in combinations(variable_features, 2):
+    for combo in combinations(variable_features, max_combination):
         # Unwrap tuples
         unwrapped = list(chain.from_iterable(c if isinstance(c, tuple) else [c] for c in combo))
         all_combinations.append(unwrapped)

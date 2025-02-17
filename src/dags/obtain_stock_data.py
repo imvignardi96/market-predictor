@@ -24,8 +24,10 @@ import time
         #### Documentacion Extractor datos stocks.
         
         El presente DAG se encarga de obtener periodicamente los valores de apertura, cierre, maximo, minimo y volumen de la API de Interactive Brokers.
-        Para que funcione correctamente, el software IB TWS (Trader Workstation) debe estar ejecutandose. Asegurar su funcionamiento es parte de otro DAG.
+        Para que funcione correctamente, el software IB TWS (Trader Workstation o Gateway) debe estar ejecutandose. Asegurar su funcionamiento es parte del usuario.
         Para ingestar se utiliza un usuario propio de procesamiento completamente diferente al que utiliza airflow para su base de datos propia.
+        
+        Es importante mencionar que la API de IB es asincrona. Luego se debe dar uso de un thread.
         
         Los pasos que realiza son:
         1) Obtencion de los Tickers activos. Los tickers son los simbolos que representan a una empresa en el mercado de valores.
@@ -50,7 +52,7 @@ def stock_data_dag():
         """,
     )
     def get_tickers():
-        # Fetch the tickers
+        # Obtener los tickers
         ticker_data = connector.read_data('tickers', {'active':1})
         active_tickers = ticker_data.to_dict(orient='records')
 
@@ -84,6 +86,7 @@ def stock_data_dag():
         ticker_code = ticker['ticker']
         ticker_id = ticker['id']
         
+        # Por defecto siempre se van a extraer contratos Smart (Acciones) en dolares. Esta moneda es la mas utilizada mundialmente
         contract = Contract()
         contract.symbol = ticker_code
         contract.secType = "STK"
@@ -98,13 +101,16 @@ def stock_data_dag():
         
         logging.info(f"Fecha maxima de {ticker_code}: {max_date_value}")
         
+        # Obtenemos la fecha actual para calcular la diferenncia de dias entre hoy y el ultimo dato
         start_date = pendulum.now(tz='UTC').date()
         
+        # Si la query no retorno una fecha, entonces se va a utilizar la fecha minima definida en Airflow.
         if max_date_value in [None, 'None', '', 'nan', 'NaT'] or (isinstance(max_date_value, float) and pd.isna(max_date_value)):
             data_start = Variable.get('cp_data_start')
             logging.info(f'Fecha a utilizar: {data_start}')
             end_date = pendulum.from_format(data_start, 'YYYY-MM-DD', tz='UTC').date()
             n_points = '1 Y'
+        # Si encontro fecha minima se obtienen los dias de diferencia
         else:
             end_date = pendulum.from_format(max_date_value, 'YYYY-MM-DD', tz='UTC').date()
             diff = start_date.diff(end_date).in_days()
@@ -121,16 +127,19 @@ def stock_data_dag():
         while start_date > end_date:
             time.sleep(1)
             # Esperar a evento activo
-            if app.data_ready_event.is_set():                
+            if app.data_ready_event.is_set():
+                # Diferencia de dias                
                 diff = start_date.diff(end_date).in_days()
                 count += 1
                 req_id = f"{ticker_id}{count}"
+                # Si la diferencia es superior a un ano. Obtener 1 Y de datos.
                 if diff>=366:
                     if not first_exec:
                         start_date = start_date-pendulum.duration(years=1)
                         n_points = '1 Y'
                     else:
                         first_exec = False
+                # Si es inferior obtener el numero de dias para finalizar
                 else:
                     start_date = start_date-pendulum.duration(days=diff)
                     n_points = f'{diff} D'
@@ -138,8 +147,10 @@ def stock_data_dag():
                 logging.info(f"Obteniendo datos de {start_date} con profundidad {n_points}")
                 logging.info(f"Id del request: {req_id}")
                 
+                # Limpiar el flag de datos listos (thread)
                 app.data_ready_event.clear()
                 
+                # Hacer request de los datos historicos.
                 app.reqHistoricalData(req_id, contract, execution_date, f"{n_points}", f"{ib_granularity}", "TRADES", 1, 1, False, [])
                     
                 execution_date = start_date.strftime('%Y%m%d-%H:%M:%S')
@@ -155,6 +166,7 @@ def stock_data_dag():
         # Datos historicos a dataframe
         df = pd.DataFrame(app.historical_data)
         
+        # Si no esta vacio se ingestan los datos en base de datos ordenados por fecha.
         if df is not None and not df.empty:
             logging.info(f"Dataframe creado")
 
@@ -200,9 +212,7 @@ def stock_data_dag():
         ticker_code = ticker['ticker']
         ticker_id = ticker['id']
         
-        # Obtener el mayor periodo para conocer la profundidad de los datos a extraer
-        max_depth = max([rsi_period, aroon_period, macd_fast, macd_slow, macd_signal])
-        
+        # Obtener siempre el numero maximo de datos a utilizar para computar los indicadores tecnicos
         query = f"""
             SELECT 
                 *
@@ -221,6 +231,7 @@ def stock_data_dag():
         data = indicators.obtain_metrics(data)
         list_of_data = data.to_dict(orient='records')
         
+        # Se actualizan los datos
         connector.update_data('stock_data_daily', list_of_data, 'id', ['rsi', 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv'])
 
         logging.info(f"Datos a computar obtenidos")

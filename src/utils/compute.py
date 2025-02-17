@@ -4,6 +4,9 @@ from dataclasses import dataclass
 
 @dataclass
 class technicalIndicators:
+    """
+    Inicializa la clase con los parametros a utilizar en la computacion
+    """
     # RSI PARAMS
     rsi_period:int = 7
     
@@ -16,6 +19,15 @@ class technicalIndicators:
     macd_signal:int = 9
     
     def obtain_metrics(self, df:pd.DataFrame) -> pd.DataFrame:
+        """
+        Obtiene ciertos indicadores tecnicos muy utilizados en la prediccion del mercado de valores.
+        En la documentacion proporcionada se puede encontrar mas sobre estos indicadores.
+        Args:
+            df (pd.DataFrame): Dataframe en el que integrar los indicadores tecnicos
+
+        Returns:
+            pd.DataFrame: Retorna el dataframe con las nuevas columnas.
+        """
         self.df = df.copy()
         
         self._compute_rsi()
@@ -26,12 +38,18 @@ class technicalIndicators:
         return self.df
     
     def _compute_obv(self):
+        """
+        Incluye on-balance volume sobre un dataframe
+        """
         self.df["obv"] = np.where(self.df["closing_price"] > self.df["closing_price"].shift(1), self.df["volume"], 
              np.where(self.df["closing_price"] < self.df["closing_price"].shift(1), -self.df["volume"], 0))
         
         self.df["obv"] = self.df["obv"].cumsum()
     
     def _compute_rsi(self):
+        """
+        Incluye el RSI sobre un dataframe
+        """
         delta = self.df['closing_price'].diff()
         delta = delta.dropna()
 
@@ -65,14 +83,7 @@ class technicalIndicators:
     
     def _compute_macd(self):
         """
-        Adds MACD, Signal line, and MACD Histogram to the DataFrame.
-        
-        Parameters:
-        df (pd.DataFrame): DataFrame containing the 'Close' price column.
-        fast_period (int): Period for the fast EMA (default is 12).
-        slow_period (int): Period for the slow EMA (default is 26).
-        signal_period (int): Period for the signal line EMA (default is 9).
-        
+        Incluye MACD, Senal y Histograma MACD sobre un dataframe.        
         """
         # Calculate the fast and slow EMAs
         self.df['ema_fast'] = self.df['closing_price'].ewm(span=self.macd_fast, adjust=False).mean()

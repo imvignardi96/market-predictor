@@ -7,7 +7,18 @@ class LSTMPlotter:
     def __init__(self):
         pass # Incluir a futuro grafica con ejes
     
-    def add_plot(self, y_test, y_pred, model_path:str):
+    def add_plot(self, y_test:np.ndarray, y_pred:np.ndarray, model_path:str):
+        """
+            Crea una nueva grafica en base a la variable objetivo test y las predicciones.
+            
+            **Args**:
+                -y_test: tensor numpy con la variable objetivo de test
+                -y_pred: tensor numpy con la variable objetivo predicha
+                -model_path: Direccion donde guardar la figura. Necesita el nombre de archivo.
+
+            **Returns*:
+                -(mape, directional_acuraccy, r2, mse): Metricas para medir la precision del modelo.
+        """
         y_test = np.ravel(y_test)
         y_pred = np.ravel(y_pred)
     
@@ -51,9 +62,17 @@ class LSTMPlotter:
         return mape, directional_accuracy, r2, mse
             
     def show(self):
+        """
+        Muestra el ultimo plot creado
+        """
         # En caso de querer mostrar la figura enn alguna situacion
         plt.tight_layout()
         plt.show()
         
     def close_figure(self):
+        """
+        Cierra la ultima figura abierta.
+        Se utiliza para liberar memoria si no se va a imprimir por pantalla los resultados.
+        """
+        # Para liberar la memoria
         plt.close()

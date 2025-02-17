@@ -50,6 +50,7 @@ class IBApi(EWrapper, EClient):
             return True
         
     def historicalData(self, reqId: int, bar: BarData):
+        # Obtiene y guarda en una lista los nuevos datos obtenidos
         data = {
             "value_at": bar.date,
             "opening_price": bar.open,
@@ -65,7 +66,7 @@ class IBApi(EWrapper, EClient):
         self.data_ready_event.set()  # Datos listos. Permite proxima ejecucion
         
     def error(self, reqId, errorCode, errorString):
-        """Funcion de manejo de errores IB API"""
+        """Funcion de manejo de errores IB API. No llamar."""
         if errorCode == 162:  # HMDS query returned no data
             logging.warning(f"Datos no disponibles en IB: {reqId}")
             self.error_code = errorCode
