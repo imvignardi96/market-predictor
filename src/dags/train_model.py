@@ -296,7 +296,7 @@ def train_model_dag():
         for directory in directories:
             logging.info(f'Inspeccionando directorio {os.path.join(base_path, directory)}')
             
-            model_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.endswih('.keras')]
+            model_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.endswith('.keras')]
             X_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('x_test')]
             y_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('y_test')]
             
