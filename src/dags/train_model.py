@@ -343,7 +343,7 @@ def train_model_dag():
                     
                     logging.info(f'Predicciones realizadas')    
                     
-                    mape, direccional, r2 = plotter.add_plot(
+                    mape, direccional, r2, mse = plotter.add_plot(
                         y_test=y_test_real,
                         y_pred=y_pred_real,
                         model_path=os.path.join(base_path, directory, f'{model_file[0]}.png')
@@ -361,6 +361,9 @@ def train_model_dag():
                     if r2>curr_r2:
                         curr_r2=r2
                         best_models['r2']={"file":model_file[0], "result":r2}
+                    if mse<curr_mse:
+                        curr_mse=mse
+                        best_models['mse']={"file":model_file[0], "result":mse}
                         
                 except Exception as e:
                     logging.error(f"Error en carga de modelo o creacion de predicciones: {e}")
@@ -415,6 +418,7 @@ def train_model_dag():
                         <li><b>MAPE:</b> {best_models['mape']['file']} con resultado de {float(best_models['mape']['result']):.2f}%</li>
                         <li><b>DA:</b> {best_models['da']['file']} con resultado de {float(best_models['da']['result']):.2f}%</li>
                         <li><b>R2:</b> {best_models['r2']['file']} con resultado de {float(best_models['r2']['result']):.4f}</li>
+                        <li><b>MSE:</b> {best_models['mse']['file']} con resultado de {float(best_models['mse']['result']):.4f}</li>
                     </ul>""")
         else:
             logging.error('No se encontraron resultados')
