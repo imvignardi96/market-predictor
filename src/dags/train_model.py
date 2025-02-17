@@ -327,9 +327,10 @@ def train_model_dag():
                     y_pred = model.predict(X_test, verbose=0)    
                     
                     logging.info(f"Forma inicial de y: {y_test.shape}")
+                    logging.info(f"Forma del scaler: {fitted_scaler.scale_.shape}")
                     
                     # Invertir transformacion
-                    zeros = np.zeros((y_test.shape[0], 4))
+                    zeros = np.zeros((y_test.shape[0], 3))
                     y_test_expanded = np.hstack((y_test, zeros))
                     y_pred_expanded = np.hstack((y_pred, zeros))
                     
