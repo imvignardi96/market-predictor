@@ -329,6 +329,8 @@ def train_model_dag():
                         model_path=os.path.join(base_path, directory, f'{model_file[0]}.png')
                     ) 
                     
+                    plotter.close_figure()
+                    
                     # Almacenamos el mejor modelo de cada metrica
                     if mape<curr_mape:
                         curr_mape=mape
