@@ -114,11 +114,11 @@ def train_model_dag():
         ticker_code = ticker['ticker']
         
         # Obtenemos los datos de stock
-        stock_data = connector.read_data('stock_data_daily', {'value_at':('>=', data_depth), 'ticker_id':ticker_id})
+        stock_data = connector.read_data('stock_data_daily_w_news', {'value_at':('>=', data_depth), 'ticker_id':ticker_id})
         logging.info(f'Datos extraidos')
         
         stock_data = stock_data[['value_at', 'opening_price', 'closing_price', 'volume', 'rsi', 
-                                 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv']]
+                                 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv', 'avg_sentiment']]
         
         # Generamos un fichero temporal para poder usarlo los datos en otro task especifico
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
@@ -210,7 +210,7 @@ def train_model_dag():
             # Features a utilizar. Se ha definido un minimo de 3 features y un maximo de 4.
             # El valor de macd es redundante, macd_hist contiene la informacion necesaria
             max_combinations = int(Variable.get('model_max_combinations'))
-            variable_columns = ['opening_price', 'obv', ('aroon_up', 'aroon_down'), 'macd_hist', 'rsi'] # La tupla indica que son "una unica" feature
+            variable_columns = ['opening_price', 'obv', ('aroon_up', 'aroon_down'), 'macd_hist', 'rsi', 'avg_sentiment'] # La tupla indica que son "una unica" feature
             
             assert max_combinations>0 and max_combinations<=len(variable_columns)
             
