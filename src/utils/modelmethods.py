@@ -51,7 +51,7 @@ def scale_dataframe(scaler:MinMaxScaler, train_split:int, val_split:int, df:Data
     df_scaled.loc[val_index, features] = scaler.transform(df.loc[val_index, features])
     df_scaled.loc[test_index, features] = scaler.transform(df.loc[test_index, features])
     
-    return df_scaled
+    return df_scaled, scaler
 
 
 def generate_features(variable_features):
