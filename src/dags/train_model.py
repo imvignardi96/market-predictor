@@ -323,19 +323,17 @@ def train_model_dag():
                     y_test = np.load(y_file_path)
                     fitted_scaler:MinMaxScaler = joblib.load(scaler_file_path)
                     
-                    # Evaluacion del modelo
-                    test_loss = model.evaluate(X_test, y_test, verbose=0)
-                    logging.info(f'Test Loss: {test_loss}')
-                    
-                    logging.info(f'Modelo evaluado')
-                    
                     # Predicciones del modelo
                     y_pred = model.predict(X_test, verbose=0)    
+                    
+                    logging.info(f"Forma inicial de y: {y_test.shape}")
                     
                     # Invertir transformacion
                     zeros = np.zeros((y_test.shape[0], 4))
                     y_test_expanded = np.hstack((y_test, zeros))
                     y_pred_expanded = np.hstack((y_pred, zeros))
+                    
+                    logging.info(f"Nueva forma de y: {y_test_expanded.shape}")
                     
                     y_test_real = fitted_scaler.inverse_transform(y_test_expanded)[:, 0]
                     y_pred_real = fitted_scaler.inverse_transform(y_pred_expanded)[:, 0]
@@ -343,8 +341,8 @@ def train_model_dag():
                     logging.info(f'Predicciones realizadas')    
                     
                     mape, direccional, r2 = plotter.add_plot(
-                        y_test=y_test,
-                        y_pred=y_pred,
+                        y_test=y_test_real,
+                        y_pred=y_pred_real,
                         model_path=os.path.join(base_path, directory, f'{model_file[0]}.png')
                     ) 
                     
