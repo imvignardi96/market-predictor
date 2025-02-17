@@ -319,7 +319,7 @@ def train_model_dag():
                     logging.info(f'Modelo evaluado')
                     
                     # Predicciones del modelo
-                    y_pred = model.predict(X_test)    
+                    y_pred = model.predict(X_test, verbose=0)    
                     
                     logging.info(f'Predicciones realizadas')    
                     
