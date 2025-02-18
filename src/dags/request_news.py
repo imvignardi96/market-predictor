@@ -9,6 +9,10 @@ sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 
 from utils.sqlconnector import SQLConnector
 
+class Deprecated(AirflowSkipException):
+    def __init__(self, message):
+        super().__init__(message)
+
 
 # Define your DAG using the @dag decorator
 @dag(
@@ -21,6 +25,8 @@ from utils.sqlconnector import SQLConnector
     schedule_interval='*/10 * * * *',  # Every 10 minutes
     doc_md=
     """
+        ⚠️ OBSOLETO ⚠️
+
         #### Documentacion Scraper Yahoo Finance.
         
         El presente DAG se encarga de obtener periodicamente las noticias para los tickers que se encuentran activos en la base de datos.
@@ -106,6 +112,7 @@ def yfinance_dag():
         # Ingest data into the database
         # We have to be careful of the size of the LazySequence, it could cause major performance
         # Impact, hence it is better many executions but with low ammount of news
+        raise Deprecated('No se realizan cargas en la base de datos mediante este DAG')
         for group_news in news_data:
             # Each position contains a list of dicts. Insert in batces of tickers
             connector.insert_data('news', group_news, prefix='IGNORE')
