@@ -13,7 +13,7 @@ import logging
     catchup=False,
     max_active_tasks=1,
     max_active_runs=1,
-    schedule_interval='*/20 * * * *',  # Cada 20 mintos
+    schedule_interval='0 * * * *',  # Cada hora
     doc_md=
     """
         #### Documentacion Sentiment Analyzer.
