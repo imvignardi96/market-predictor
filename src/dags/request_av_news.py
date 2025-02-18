@@ -101,7 +101,7 @@ def alpha_vantage_dag():
         max_date = pendulum.date(2000,1,1)
         overflow = False # Variable para evitar ingestar demasiados datos a la vez. Si es True finaliza la ejecucion
         news_list = []
-        while max_date!=pendulum.now().date() or overflow:
+        while max_date!=pendulum.now().date() and not overflow:
             logging.info(f"Obteniendo noticias de {ticker_code} a partir de la fecha {time_from} con un limite de {number_of_news}")
             url=f'https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers={ticker_code.upper()}&sort=EARLIEST&limit={number_of_news}&time_from={time_from}&apikey={api_key}'
             
