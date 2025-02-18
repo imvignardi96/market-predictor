@@ -121,7 +121,7 @@ def alpha_vantage_dag():
                             id = uuid.uuid5(namespace, unique_string)
                                               
                             dict = {
-                                'id':id,
+                                'id':str(id),
                                 'ticker_id':ticker_id,
                                 'article_title':article['title'],
                                 'article_date':pendulum.parse(article['time_published'])
