@@ -128,8 +128,9 @@ def alpha_vantage_dag():
                             }
                             news_list.append(dict)
                             
+                            prev_date = max_date
+                            
                             if pendulum.parse(article['time_published']).date()>max_date:
-                                prev_date = max_date
                                 max_date = pendulum.parse(article['time_published']).date()
                                 time_from = article['time_published'][:-2]
                                 
