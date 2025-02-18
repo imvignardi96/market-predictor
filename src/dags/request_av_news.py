@@ -68,7 +68,7 @@ def alpha_vantage_dag():
                 -news_list: Lista de diccionarios que se agrega como LazySequence.
         """
     )
-    def get_news(ticker:dict, n_news:int):
+    def get_news(ticker:dict):
         import pandas as pd
         import time
         import uuid
@@ -83,6 +83,8 @@ def alpha_vantage_dag():
         min_relevance = float(Variable.get('av_min_relevance'))
         number_of_news = int(Variable.get('av_number_news', default_var=1000))
         
+        logging.info(f'Variable obtenidas')
+        
         # Primero se obtiene la fecha maxima que se tiene en la base de datos
         query = f"SELECT MAX(article_date) FROM news WHERE ticker_id={ticker_id}"
         db_date = connector.custom_query(query)
@@ -91,9 +93,10 @@ def alpha_vantage_dag():
         
         if db_date_value in [None, 'None', '', 'nan', 'NaT'] or (isinstance(db_date_value, float) and pd.isna(db_date_value)):
             time_from = Variable.get('av_data_start')
-            logging.info(f'Fecha a utilizar: {time_from}')
         else:
             time_from=pendulum.parse(db_date_value).strftime('%Y%m%dT%H%M')
+            
+        logging.info(f'Fecha a utilizar: {time_from}')
 
         max_date = pendulum.date(2000,1,1)
         overflow = False # Variable para evitar ingestar demasiados datos a la vez. Si es True finaliza la ejecucion
@@ -134,7 +137,7 @@ def alpha_vantage_dag():
             
             # Si hubo error lanzamos excepcion             
             else:
-                logging.error("Error API")
+                logging.error(f"Error API: {r['Error Message']}")
                 raise AirflowFailException
                 
         return news_list
