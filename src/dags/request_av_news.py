@@ -18,7 +18,7 @@ from utils.sqlconnector import SQLConnector
     catchup=False,
     max_active_tasks=16,
     max_active_runs=1,
-    schedule_interval='*/1 * * * *',  # Every minute
+    schedule_interval='*/30 * * * *',  # Every 30 minutes
     doc_md=
     """
         #### Documentacion Scraper Alpha Vantage.
