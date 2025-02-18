@@ -129,6 +129,7 @@ def alpha_vantage_dag():
                             news_list.append(dict)
                             
                             if len(news_list)>100:
+                                logging.info('Se ha producido overflow para proteger a la base de datos')
                                 overflow=True
 
                             if pendulum.parse(article['time_published']).date()>max_date:
