@@ -157,7 +157,7 @@ def alpha_vantage_dag():
 
     # Orden de ejecucion
     tickers = get_tickers()
-    news = get_news.partial(n_news=number_of_news).expand(ticker=tickers)
+    news = get_news.expand(ticker=tickers)
     insert_database(news)
 
 # Create the DAG instance
