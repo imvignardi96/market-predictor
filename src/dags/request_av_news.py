@@ -131,7 +131,7 @@ def alpha_vantage_dag():
                             if len(news_list)>100:
                                 overflow=True
 
-                            if pendulum.parse(article['time_published'])>max_date:
+                            if pendulum.parse(article['time_published']).date()>max_date:
                                 max_date = pendulum.parse(article['time_published']).date()
                                 time_from = article['time_published'][:-2]
             
