@@ -135,7 +135,7 @@ def alpha_vantage_dag():
                                 
                             if prev_date==max_date:
                                 logging.info('Aun no se recibieron las noticias del dia')
-                                break
+                                overflow=True
                             
                                 
                 if len(news_list)>1000:
