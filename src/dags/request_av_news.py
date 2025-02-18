@@ -127,15 +127,14 @@ def alpha_vantage_dag():
                                 'article_date':pendulum.parse(article['time_published'])
                             }
                             news_list.append(dict)
-                            
-                            if len(news_list)>100:
-                                logging.info('Se ha producido overflow para proteger a la base de datos')
-                                overflow=True
 
                             if pendulum.parse(article['time_published']).date()>max_date:
                                 max_date = pendulum.parse(article['time_published']).date()
                                 time_from = article['time_published'][:-2]
-            
+                                
+                    if len(news_list)>500:
+                        logging.info('Se ha producido overflow para proteger a la base de datos')
+                        overflow=True
             # Si hubo error lanzamos excepcion             
             else:
                 logging.error(f"Error API: {r['Error Message']}")
