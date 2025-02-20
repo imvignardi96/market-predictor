@@ -161,6 +161,7 @@ def stock_data_dag():
                 app.disconnect()
                 raise AirflowFailException
 
+        time.sleep(10)
         app.disconnect()
         
         # Datos historicos a dataframe
