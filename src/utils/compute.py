@@ -18,6 +18,12 @@ class technicalIndicators:
     macd_slow:int = 26
     macd_signal:int = 9
     
+    # ADX PARAMS
+    adx_period: int = 14
+
+    # ATR PARAMS
+    atr_period: int = 14
+    
     def obtain_metrics(self, df:pd.DataFrame) -> pd.DataFrame:
         """
         Obtiene ciertos indicadores tecnicos muy utilizados en la prediccion del mercado de valores.
@@ -34,6 +40,8 @@ class technicalIndicators:
         self._compute_aroon()
         self._compute_obv()
         self._compute_macd()
+        self._compute_adx()
+        self._compute_atr()
         
         return self.df
     
@@ -100,3 +108,41 @@ class technicalIndicators:
         
         # Drop the intermediate EMA columns
         self.df.drop(columns=['ema_fast', 'ema_slow'], axis=1, errors='ignore', inplace=True)
+        
+    def _compute_adx(self):
+        high = self.df['high_price']
+        low = self.df['low_price']
+        close = self.df['closing_price']
+
+        plus_dm = high.diff()
+        minus_dm = low.diff()
+
+        plus_dm = np.where((plus_dm > minus_dm) & (plus_dm > 0), plus_dm, 0.0)
+        minus_dm = np.where((minus_dm > plus_dm) & (minus_dm > 0), minus_dm, 0.0)
+
+        tr1 = high - low
+        tr2 = abs(high - close.shift())
+        tr3 = abs(low - close.shift())
+        tr = np.maximum.reduce([tr1, tr2, tr3])
+        atr = pd.Series(tr).rolling(window=self.adx_period).mean()
+
+        plus_di = 100 * (pd.Series(plus_dm).rolling(window=self.adx_period).sum() / atr)
+        minus_di = 100 * (pd.Series(minus_dm).rolling(window=self.adx_period).sum() / atr)
+
+        dx = (abs(plus_di - minus_di) / (plus_di + minus_di)) * 100
+        adx = dx.rolling(window=self.adx_period).mean()
+
+        self.df['adx'] = adx
+
+    def _compute_atr(self):
+        high = self.df['high_price']
+        low = self.df['low_price']
+        close = self.df['closing_price']
+
+        tr1 = high - low
+        tr2 = abs(high - close.shift())
+        tr3 = abs(low - close.shift())
+        tr = np.maximum.reduce([tr1, tr2, tr3])
+        atr = tr.rolling(window=self.atr_period).mean()
+
+        self.df['atr'] = atr
