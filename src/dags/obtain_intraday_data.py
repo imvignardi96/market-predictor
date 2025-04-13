@@ -171,7 +171,7 @@ def stock_data_dag():
         if df is not None and not df.empty:
             logging.info(f"Dataframe creado")
 
-            df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d', errors='coerce')
+            df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d-%H:%M:%S', errors='coerce')
             df['ticker_id'] = ticker_id
             df.sort_index(ascending=True, inplace=True)
             
