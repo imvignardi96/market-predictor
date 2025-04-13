@@ -169,7 +169,7 @@ def stock_data_dag():
         
         # Si no esta vacio se ingestan los datos en base de datos ordenados por fecha.
         if df is not None and not df.empty:
-            logging.info(f"Dataframe creado")
+            logging.info("Dataframe creado")
 
             df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d', errors='coerce')
             df['ticker_id'] = ticker_id
@@ -179,7 +179,7 @@ def stock_data_dag():
             list_of_data = df.to_dict(orient='records')
             connector.insert_data('stock_data_daily', list_of_data, 'IGNORE')
         else:
-            logging.info(f"Dataframe vacio. Fin de semana no se generan datos.")
+            logging.info("Dataframe vacio. Fin de semana no se generan datos.")
             raise AirflowSkipException
         
     @task(
@@ -214,7 +214,6 @@ def stock_data_dag():
         )
         
         # Obtener los valores de las columnas
-        ticker_code = ticker['ticker']
         ticker_id = ticker['id']
         
         # Obtener siempre el numero maximo de datos a utilizar para computar los indicadores tecnicos
@@ -239,7 +238,7 @@ def stock_data_dag():
         # Se actualizan los datos
         connector.update_data('stock_data_daily', list_of_data, 'id', ['rsi', 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv', 'adx', 'atr'])
 
-        logging.info(f"Datos a computar obtenidos")
+        logging.info("Datos a computar obtenidos")
         
     tickers = get_tickers()
     get_prices = get_data.expand(ticker=tickers)

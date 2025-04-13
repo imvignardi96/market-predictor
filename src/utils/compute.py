@@ -1,6 +1,8 @@
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
-from dataclasses import dataclass
+
 
 @dataclass
 class technicalIndicators:
@@ -128,7 +130,6 @@ class technicalIndicators:
     def _compute_adx(self):
         high = self.df['high_price']
         low = self.df['low_price']
-        close = self.df['closing_price']
 
         plus_dm = high.diff()
         minus_dm = low.diff()

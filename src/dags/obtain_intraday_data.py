@@ -1,16 +1,16 @@
-from utils.ibconnector import IBApi
-import pendulum
-from airflow.decorators import task, dag
-from airflow.models import Variable
-from airflow.exceptions import AirflowSkipException, AirflowFailException
-
-from utils.sqlconnector import SQLConnector
+import logging
+import time
 
 import pandas as pd
+import pendulum
+from airflow.decorators import dag, task
+from airflow.exceptions import AirflowFailException, AirflowSkipException
+from airflow.models import Variable
 
-import logging 
-import time
-    
+from utils.ibconnector import IBApi
+from utils.sqlconnector import SQLConnector
+
+
 @dag(
     dag_id='intraday_data_extraction',
     description='DAG para obtener datos intradia de la plataforma TWS de IB',
@@ -112,7 +112,7 @@ def stock_data_dag():
             n_points = '1 W'
         # Si encontro fecha minima se obtienen los dias de diferencia
         else:
-            end_date = pendulum.from_format(max_date_value, 'YYYY-MM-DD', tz='UTC').date()
+            end_date = pendulum.from_format(max_date_value, 'YYYY-MM-DD HH:MM:SS', tz='UTC').date()
             diff = start_date.diff(end_date).in_days()
             n_points = f'{diff} D'
 
@@ -169,7 +169,7 @@ def stock_data_dag():
         
         # Si no esta vacio se ingestan los datos en base de datos ordenados por fecha.
         if df is not None and not df.empty:
-            logging.info(f"Dataframe creado")
+            logging.info("Dataframe creado")
 
             df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d %H:%M:%S', errors='coerce')
             df['ticker_id'] = ticker_id
@@ -179,7 +179,7 @@ def stock_data_dag():
             list_of_data = df.to_dict(orient='records')
             connector.insert_data('stock_data_intraday', list_of_data, 'IGNORE')
         else:
-            logging.info(f"Dataframe vacio. Fin de semana no se generan datos.")
+            logging.info("Dataframe vacio. Fin de semana no se generan datos.")
             raise AirflowSkipException
         
     @task(
@@ -200,7 +200,6 @@ def stock_data_dag():
         macd_signal = int(Variable.get('cp_macd_signal'))
         adx_period = int(Variable.get('cp_adx_period'))
         atr_period = int(Variable.get('cp_atr_period'))
-        data_depth = int(Variable.get('model_data_depth')) # Se computaran los datos que se utilizaran en el modelo
         
         # Inicializamos la clase
         indicators = technicalIndicators(
@@ -214,7 +213,6 @@ def stock_data_dag():
         )
         
         # Obtener los valores de las columnas
-        ticker_code = ticker['ticker']
         ticker_id = ticker['id']
         
         # Obtener siempre el numero maximo de datos a utilizar para computar los indicadores tecnicos
@@ -225,7 +223,7 @@ def stock_data_dag():
             WHERE ticker_id = {ticker_id}
                 AND (rsi IS NULL OR aroon_up IS NULL OR macd IS NULL OR obv IS NULL OR atr IS NULL or adx IS NULL)
                 AND value_at >= (
-                    SELECT DATE_SUB(MAX(value_at), INTERVAL {data_depth}+1 MONTH)
+                    SELECT DATE_SUB(MAX(value_at), INTERVAL 24 MONTH)
                     FROM stock_data_intraday
                     WHERE ticker_id = {ticker_id}
                 )
@@ -239,7 +237,7 @@ def stock_data_dag():
         # Se actualizan los datos
         connector.update_data('stock_data_intraday', list_of_data, 'id', ['rsi', 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv', 'adx', 'atr'])
 
-        logging.info(f"Datos a computar obtenidos")
+        logging.info("Datos a computar obtenidos")
         
     tickers = get_tickers()
     get_prices = get_data.expand(ticker=tickers)
