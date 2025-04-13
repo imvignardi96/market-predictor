@@ -135,7 +135,7 @@ def stock_data_dag():
                 # Si la diferencia es superior a una semana. Obtener 1 W de datos.
                 if diff>=7:
                     if not first_exec:
-                        start_date = start_date-pendulum.duration(years=1)
+                        start_date = start_date-pendulum.duration(days=7)
                         n_points = '1 W'
                     else:
                         first_exec = False
@@ -171,7 +171,7 @@ def stock_data_dag():
         if df is not None and not df.empty:
             logging.info(f"Dataframe creado")
 
-            df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d-%H:%M:%S', errors='coerce')
+            df['value_at'] = pd.to_datetime(df['value_at'].astype(str), format='%Y%m%d %H:%M:%S', errors='coerce')
             df['ticker_id'] = ticker_id
             df.sort_index(ascending=True, inplace=True)
             
