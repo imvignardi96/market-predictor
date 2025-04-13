@@ -71,9 +71,6 @@ class Smart(keras_tuner.HyperModel):
         batch_size = hp.Int('batch_size', 32, 128, step=32)  # Default batch size range
         epochs = hp.Int('epochs', 50, 200)  # Default epochs range
 
-        if callbacks is None:
-            callbacks = []
-
         # Call the default Keras fit method with these dynamic parameters
         history = model.fit(
             *args, # Includes training data
