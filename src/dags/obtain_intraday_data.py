@@ -112,7 +112,7 @@ def stock_data_dag():
             n_points = '1 W'
         # Si encontro fecha minima se obtienen los dias de diferencia
         else:
-            end_date = pendulum.from_format(max_date_value, 'YYYY-MM-DD HH:MM:SS', tz='UTC').date()
+            end_date = pendulum.from_format(max_date_value, 'YYYY-MM-DD HH:mm:ss', tz='UTC').date()
             diff = start_date.diff(end_date).in_days()
             n_points = f'{diff} D'
 
@@ -230,6 +230,8 @@ def stock_data_dag():
             ORDER BY value_at ASC;
         """
         data = connector.custom_query(query)
+        
+        logging.info(data.head())
         
         data = indicators.obtain_metrics(data)
         list_of_data = data.to_dict(orient='records')
