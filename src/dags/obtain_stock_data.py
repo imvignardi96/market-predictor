@@ -198,6 +198,8 @@ def stock_data_dag():
         macd_fast = int(Variable.get('cp_macd_fast'))
         macd_slow = int(Variable.get('cp_macd_slow'))
         macd_signal = int(Variable.get('cp_macd_signal'))
+        adx_period = int(Variable.get('cp_adx_period'))
+        atr_period = int(Variable.get('cp_atr_period'))
         data_depth = int(Variable.get('model_data_depth')) # Se computaran los datos que se utilizaran en el modelo
         
         # Inicializamos la clase
@@ -206,7 +208,9 @@ def stock_data_dag():
             aroon_period,
             macd_fast,
             macd_slow,
-            macd_signal
+            macd_signal,
+            adx_period,
+            atr_period
         )
         
         # Obtener los valores de las columnas
@@ -219,7 +223,7 @@ def stock_data_dag():
                 *
             FROM stock_data_daily
             WHERE ticker_id = {ticker_id}
-                AND (rsi IS NULL OR aroon_up IS NULL OR macd IS NULL OR obv IS NULL)
+                AND (rsi IS NULL OR aroon_up IS NULL OR macd IS NULL OR obv IS NULL OR atr IS NULL or adx IS NULL)
                 AND value_at >= (
                     SELECT DATE_SUB(MAX(value_at), INTERVAL {data_depth}+1 MONTH)
                     FROM stock_data_daily
@@ -233,7 +237,7 @@ def stock_data_dag():
         list_of_data = data.to_dict(orient='records')
         
         # Se actualizan los datos
-        connector.update_data('stock_data_daily', list_of_data, 'id', ['rsi', 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv'])
+        connector.update_data('stock_data_daily', list_of_data, 'id', ['rsi', 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv', 'adx', 'atr'])
 
         logging.info(f"Datos a computar obtenidos")
         
