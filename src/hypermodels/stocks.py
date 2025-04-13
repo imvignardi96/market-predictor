@@ -66,7 +66,7 @@ class Smart(keras_tuner.HyperModel):
 
         return model
 
-    def fit(self, hp, model, X_train, y_train, X_val, y_val, callbacks=None, **kwargs):
+    def fit(self, hp, model, X_train, y_train, validation_data, callbacks=None, **kwargs):
         # Retrieve hyperparameters passed for batch size, epochs, and callbacks
         batch_size = hp.Int('batch_size', 32, 128, step=32)  # Default batch size range
         epochs = hp.Int('epochs', 50, 200)  # Default epochs range
@@ -79,7 +79,7 @@ class Smart(keras_tuner.HyperModel):
             X_train, y_train,
             batch_size=batch_size,
             epochs=epochs,
-            validation_data=(X_val, y_val),
+            validation_data=validation_data,
             callbacks=callbacks,  # Pass the callbacks
             **kwargs
         )
