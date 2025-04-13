@@ -142,7 +142,11 @@ class technicalIndicators:
         tr1 = high - low
         tr2 = abs(high - close.shift())
         tr3 = abs(low - close.shift())
-        tr = np.maximum.reduce([tr1, tr2, tr3])
+
+        # Compute True Range using pandas to retain Series behavior
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+        # Apply rolling mean for ATR
         atr = tr.rolling(window=self.atr_period).mean()
 
         self.df['atr'] = atr
