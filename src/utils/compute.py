@@ -134,19 +134,28 @@ class technicalIndicators:
 
         self.df['adx'] = adx
 
-    def _compute_atr(self):
-        high = self.df['high_price']
-        low = self.df['low_price']
-        close = self.df['closing_price']
+    def _compute_adx(self):
+        high = self.df['high_price'].astype(float)
+        low = self.df['low_price'].astype(float)
+        close = self.df['closing_price'].astype(float)
+
+        plus_dm = high.diff()
+        minus_dm = low.diff()
+
+        plus_dm = np.where((plus_dm > minus_dm) & (plus_dm > 0), plus_dm, 0.0)
+        minus_dm = np.where((minus_dm > plus_dm) & (minus_dm > 0), minus_dm, 0.0)
 
         tr1 = high - low
         tr2 = abs(high - close.shift())
         tr3 = abs(low - close.shift())
+        
+        # Ensure values are float to avoid Decimal issues
+        tr = pd.concat([tr1, tr2, tr3], axis=1).astype(float).max(axis=1)
 
-        # Compute True Range using pandas to retain Series behavior
-        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-
-        # Apply rolling mean for ATR
         atr = tr.rolling(window=self.atr_period).mean()
+        plus_di = 100 * pd.Series(plus_dm).rolling(window=self.atr_period).mean() / atr
+        minus_di = 100 * pd.Series(minus_dm).rolling(window=self.atr_period).mean() / atr
+        dx = (abs(plus_di - minus_di) / (plus_di + minus_di)) * 100
 
-        self.df['atr'] = atr
+        adx = dx.rolling(window=self.atr_period).mean()
+        self.df['adx'] = adx
