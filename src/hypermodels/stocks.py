@@ -21,7 +21,7 @@ class Smart(keras_tuner.HyperModel):
         is_bidirectional = hp.Boolean('is_bidirectional')
         
         for i in range(n_layers):
-            units = hp.Int(f'units_{i}', 32, 256, step=32)
+            units = hp.Int(f'units_{i}', 32, 128, step=32)
             return_seq = i < n_layers - 1
 
             lstm_layer = keras.layers.LSTM(
@@ -46,18 +46,14 @@ class Smart(keras_tuner.HyperModel):
             model.add(keras.layers.Dense(dense_units, activation=int_activation))
 
         # Optional Dropout
-        dropout_rate = hp.Float('dropout_rate', 0.0, 0.5, step=0.1)
+        dropout_rate = hp.Float('dropout_rate', 0.0, 0.3, step=0.1)
         if dropout_rate > 0:
             model.add(keras.layers.Dropout(dropout_rate))
 
         # Optimizer + Learning rate
-        optimizer_choice = hp.Choice('optimizer', ['adam', 'rmsprop'])
         learning_rate = hp.Float('learning_rate', 1e-4, 1e-2, sampling='log')
 
-        if optimizer_choice == 'adam':
-            optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
-        else:
-            optimizer = keras.optimizers.RMSprop(learning_rate=learning_rate)
+        optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
 
         # Loss function
         loss_choice = hp.Choice('loss', ['mse', 'mae', 'huber'])
@@ -69,7 +65,7 @@ class Smart(keras_tuner.HyperModel):
     def fit(self, hp, model, *args, **kwargs):
         # Retrieve hyperparameters passed for batch size, epochs, and callbacks
         batch_size = hp.Int('batch_size', 32, 128, step=32)  # Default batch size range
-        epochs = hp.Int('epochs', 50, 200)  # Default epochs range
+        epochs = hp.Int('epochs', 50, 200, step=10)  # Default epochs range
 
         # Call the default Keras fit method with these dynamic parameters
         history = model.fit(
