@@ -106,7 +106,7 @@ def stock_data_dag():
         
         # Si la query no retorno una fecha, entonces se va a utilizar la fecha minima definida en Airflow.
         if max_date_value in [None, 'None', '', 'nan', 'NaT'] or (isinstance(max_date_value, float) and pd.isna(max_date_value)):
-            data_start = Variable.get('cp_data_start')
+            data_start = Variable.get('cp_data_start_intraday')
             logging.info(f'Fecha a utilizar: {data_start}')
             end_date = pendulum.from_format(data_start, 'YYYY-MM-DD', tz='UTC').date()
             n_points = '1 W'
