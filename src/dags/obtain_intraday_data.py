@@ -3,7 +3,8 @@ import time
 
 import pandas as pd
 import pendulum
-from airflow.sdk import dag, task, Variable
+from airflow.sdk import dag, task
+from airflow.models.variable import Variable
 from airflow.exceptions import AirflowFailException, AirflowSkipException
 
 from utils.ibconnector import IBApi
