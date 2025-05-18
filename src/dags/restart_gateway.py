@@ -83,8 +83,8 @@ def check_gateway_dag():
         import pyautogui  # If pyautogui works fine for your Linux setup
         import time
         import os
-        from airflow.sdk import Variable
-        
+        from airflow.models.variable import Variable
+
         try:
             ib_user = Variable.get('ib_user_secret')
             ib_password = Variable.get('ib_password_secret')

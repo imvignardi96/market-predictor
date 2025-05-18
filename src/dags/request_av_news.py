@@ -1,6 +1,7 @@
 import pendulum
 import logging
-from airflow.sdk import task, dag, Variable
+from airflow.sdk import task, dag
+from airflow.models.variable import Variable
 from airflow.exceptions import AirflowFailException
 import sys
 import os

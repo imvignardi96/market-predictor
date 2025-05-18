@@ -1,6 +1,7 @@
 from utils.sqlconnector import SQLConnector
 import utils.modelmethods as mm
-from airflow.sdk import task, dag, Variable
+from airflow.sdk import task, dag
+from airflow.models.variable import Variable
 from airflow.exceptions import AirflowFailException
 
 import pandas as pd
