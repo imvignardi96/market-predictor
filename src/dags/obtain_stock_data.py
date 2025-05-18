@@ -1,7 +1,6 @@
 from utils.ibconnector import IBApi
 import pendulum
-from airflow.decorators import task, dag
-from airflow.models import Variable
+from airflow.sdk import task, dag, Variable
 from airflow.exceptions import AirflowSkipException, AirflowFailException
 
 from utils.sqlconnector import SQLConnector
@@ -18,7 +17,7 @@ import time
     catchup=False,
     max_active_tasks=5,
     max_active_runs=1,
-    schedule_interval='30 23 * * *',  # At 23:30
+    schedule='30 23 * * *',  # At 23:30
     doc_md=
     """
         #### Documentacion Extractor datos stocks.

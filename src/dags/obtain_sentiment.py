@@ -1,7 +1,6 @@
 from utils.sqlconnector import SQLConnector
-from airflow.decorators import task, dag
+from airflow.sdk import task, dag, Variable
 from airflow.exceptions import AirflowException, AirflowSkipException, AirflowFailException
-from airflow.models import Variable
 import pendulum
 import logging
 
@@ -13,7 +12,7 @@ import logging
     catchup=False,
     max_active_tasks=1,
     max_active_runs=1,
-    schedule_interval='0 * * * *',  # Cada hora
+    schedule='0 * * * *',  # Cada hora
     doc_md=
     """
         #### Documentacion Sentiment Analyzer.

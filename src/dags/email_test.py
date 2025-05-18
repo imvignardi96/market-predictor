@@ -1,7 +1,6 @@
-from airflow import DAG
-from airflow.decorators import task, dag
-from airflow.operators.email import EmailOperator
-from datetime import datetime, timedelta
+from airflow.sdk import task, dag
+from airflow.providers.smtp.operators.smtp import EmailOperator
+from datetime import datetime
 
 # Define the default arguments
 default_args = {
@@ -14,7 +13,7 @@ default_args = {
 # Define the DAG using the decorator
 @dag(
     default_args=default_args,
-    schedule_interval='0 22 * * 6',  # This cron expression means 22:00 on Saturdays
+    schedule='0 22 * * 6',  # This cron expression means 22:00 on Saturdays
     catchup=False,  # To avoid running missed instances
     tags=['test'],
 )

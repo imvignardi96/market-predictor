@@ -1,8 +1,8 @@
 from utils.sqlconnector import SQLConnector
 import utils.modelmethods as mm
-from airflow.decorators import task, dag
+from airflow.sdk import task, dag, Variable
 from airflow.exceptions import AirflowFailException
-from airflow.models import Variable
+
 import pandas as pd
 import pendulum
 import logging
@@ -15,7 +15,7 @@ import logging
     catchup=False,
     max_active_tasks=3,
     max_active_runs=1,
-    schedule_interval='0 14 * * 6',  # A las 14:00 el sabado
+    schedule='0 14 * * 6',  # A las 14:00 el sabado
     doc_md=
     """
         #### Documentacion Entrenamiento de Modelos BiLSTM/LSTM.
@@ -115,7 +115,7 @@ def train_model_dag():
         
         # Obtenemos los datos de stock
         stock_data = connector.read_data('stock_data_daily_w_news', {'value_at':('>=', data_depth), 'ticker_id':ticker_id})
-        logging.info(f'Datos extraidos')
+        logging.info('Datos extraidos')
         
         stock_data = stock_data[['value_at', 'opening_price', 'closing_price', 'volume', 'rsi', 
                                  'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv', 'avg_sentiment']]
@@ -201,7 +201,7 @@ def train_model_dag():
             stock_data.sort_index(inplace=True, ascending=True)
             stock_data['target'] = stock_data['closing_price'] # Clonar columna. Esta se utilizara para y
             
-            logging.info(f'Pretratamiento realizado')
+            logging.info('Pretratamiento realizado')
             
             #############################################################
             ######### A partir de aqui comienzan las iteraciones ########
@@ -219,7 +219,7 @@ def train_model_dag():
             # Se obtienen todas las combinaciones posibles a utilizar
             combination_columns = mm.generate_features(variable_columns, max_combinations)
             
-            logging.info(f'Combinacion de features generada')
+            logging.info('Combinacion de features generada')
             
             complexities=[initial_complexity]
             for _ in range(max_layers-1):
@@ -425,7 +425,7 @@ def train_model_dag():
                     y_test_real = fitted_scaler.inverse_transform(y_test_expanded)[:, 0]
                     y_pred_real = fitted_scaler.inverse_transform(y_pred_expanded)[:, 0]
                     
-                    logging.info(f'Predicciones realizadas')    
+                    logging.info('Predicciones realizadas')    
                     
                     # Graficado y obtencion de las metricas principales
                     mape, direccional, r2, mse = plotter.add_plot(
@@ -464,7 +464,7 @@ def train_model_dag():
         trigger_rule = "all_done"
     )
     def send_email(best_models):
-        from airflow.operators.email import EmailOperator
+        from airflow.providers.smtp.operators.smtp import EmailOperator
         import zipfile
         import json
         import os

@@ -1,14 +1,10 @@
 from utils.sqlconnector import SQLConnector
 import utils.modelmethods as mm
-from airflow.decorators import task, dag
+from airflow.sdk import task, dag, Variable
 from airflow.exceptions import AirflowFailException
-from airflow.models import Variable
 import pandas as pd
 import pendulum
 import logging
-
-
-
 
 
 # Dag
@@ -19,7 +15,7 @@ import logging
     catchup=False,
     max_active_tasks=3,
     max_active_runs=1,
-    schedule_interval='0 14 * * 6',  # A las 14:00 el sabado
+    schedule='0 14 * * 6',  # A las 14:00 el sabado
     doc_md=
     """
         #### Documentacion Entrenamiento de Modelos BiLSTM/LSTM.
@@ -119,10 +115,7 @@ def train_model_dag():
         
         # Obtenemos los datos de stock
         stock_data = connector.read_data('stock_data_daily_w_news', {'value_at':('>=', data_depth), 'ticker_id':ticker_id})
-        logging.info(f'Datos extraidos')
-        
-        stock_data = stock_data[['value_at', 'opening_price', 'closing_price', 'volume', 'rsi', 
-                                 'aroon_up', 'aroon_down', 'macd', 'macd_hist', 'macd_signal', 'obv', 'avg_sentiment']]
+        logging.info('Datos extraidos')
         
         # Generamos un fichero temporal para poder usarlo los datos en otro task especifico
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
@@ -147,6 +140,7 @@ def train_model_dag():
     )
     def generate_models(ticker_dict):
         import os
+        import ast
         import keras
         import keras_tuner as kt
         from sklearn.preprocessing import MinMaxScaler
@@ -178,6 +172,11 @@ def train_model_dag():
             
             assert train_scaler+validation_scaler<=1 and validation_scaler>0 or train_scaler>0
             
+            # Lista de features
+            feature_combo = ast.literal_eval(Variable.get("model_feature_combo"))
+            
+            assert isinstance(feature_combo, list)
+            
             logging.info('Variables inicializadas')
             
             #############################################################
@@ -192,7 +191,7 @@ def train_model_dag():
             stock_data.sort_index(inplace=True, ascending=True)
             stock_data['target'] = stock_data['closing_price'] # Clonar columna. Esta se utilizara para y
             
-            logging.info(f'Pretratamiento realizado')
+            logging.info('Pretratamiento realizado')
             
             #############################################################
             ######### A partir de aqui comienzan las iteraciones ########
@@ -201,7 +200,7 @@ def train_model_dag():
             # Features a utilizar. Se ha definido un minimo de 3 features y un maximo de 4.
             # El valor de macd es redundante, macd_hist contiene la informacion necesaria
             max_combinations = int(Variable.get('model_max_combinations'))
-            variable_columns = ['opening_price', 'obv', ('aroon_up', 'aroon_down'), 'macd_hist', 'rsi', 'avg_sentiment'] # La tupla indica que son "una unica" feature
+            variable_columns = feature_combo # La tupla indica que son "una unica" feature
             
             assert max_combinations>0 and max_combinations<=len(variable_columns)
             
@@ -210,7 +209,7 @@ def train_model_dag():
             # Se obtienen todas las combinaciones posibles a utilizar
             combination_columns = mm.generate_features(variable_columns, max_combinations)
             
-            logging.info(f'Combinacion de features generada')
+            logging.info('Combinacion de features generada')
             
             for combination in combination_columns:                
                 # Obtenemos las features de la iteracion
@@ -243,7 +242,7 @@ def train_model_dag():
                 ####################################################
                 ############## Generador de modelos ################
                 ####################################################                
-                logging.info(f'Generando modelo')
+                logging.info('Generando modelo')
                 
                 # Prepare model builder function with context
                 input_shape = (X_train.shape[1], X_train.shape[2])
@@ -384,7 +383,7 @@ def train_model_dag():
                     y_test_real = fitted_scaler.inverse_transform(y_test_expanded)[:, 0]
                     y_pred_real = fitted_scaler.inverse_transform(y_pred_expanded)[:, 0]
                     
-                    logging.info(f'Predicciones realizadas')    
+                    logging.info('Predicciones realizadas')    
                     
                     # Graficado y obtencion de las metricas principales
                     mape, direccional, r2, mse = plotter.add_plot(
@@ -423,7 +422,7 @@ def train_model_dag():
         trigger_rule = "all_done"
     )
     def send_email(best_models):
-        from airflow.operators.email import EmailOperator
+        from airflow.providers.smtp.operators.smtp import EmailOperator
         import zipfile
         import json
         import os

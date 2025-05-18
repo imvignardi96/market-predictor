@@ -1,6 +1,6 @@
 import pendulum
 import logging
-from airflow.decorators import task, dag
+from airflow.sdk import task, dag
 from airflow.exceptions import AirflowSkipException, AirflowFailException
 
 
@@ -12,7 +12,7 @@ from airflow.exceptions import AirflowSkipException, AirflowFailException
     catchup=False,
     max_active_tasks=1,
     max_active_runs=1,
-    schedule_interval='30 22 * * *',  # At 22:30
+    schedule='30 22 * * *',  # At 22:30
     default_args={
         "retries": 3,
         "retry_delay": pendulum.duration(seconds=30),
@@ -69,7 +69,7 @@ def check_gateway_dag():
                 logging.error(f"Error: {e}")
                 raise AirflowFailException
         
-        logging.info(f"Proceso no localizado.")
+        logging.info("Proceso no localizado.")
 
     @task(
         doc_md=
@@ -83,7 +83,7 @@ def check_gateway_dag():
         import pyautogui  # If pyautogui works fine for your Linux setup
         import time
         import os
-        from airflow.models import Variable
+        from airflow.sdk import Variable
         
         try:
             ib_user = Variable.get('ib_user_secret')
