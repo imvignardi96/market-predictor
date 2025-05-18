@@ -1,8 +1,7 @@
 import pendulum
 import logging
-from airflow.decorators import task, dag
-from airflow.exceptions import AirflowException, AirflowSkipException, AirflowFailException
-from airflow.models import Variable
+from airflow.sdk import task, dag, Variable
+from airflow.exceptions import AirflowFailException
 import sys
 import os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
@@ -18,7 +17,7 @@ from utils.sqlconnector import SQLConnector
     catchup=False,
     max_active_tasks=16,
     max_active_runs=1,
-    schedule_interval='*/30 * * * *',  # Every 30 minutes
+    schedule='*/30 * * * *',  # Every 30 minutes
     doc_md=
     """
         #### Documentacion Scraper Alpha Vantage.
@@ -83,7 +82,7 @@ def alpha_vantage_dag():
         min_relevance = float(Variable.get('av_min_relevance'))
         number_of_news = int(Variable.get('av_number_news', default_var=1000))
         
-        logging.info(f'Variable obtenidas')
+        logging.info('Variables obtenidas')
         
         # Primero se obtiene la fecha maxima que se tiene en la base de datos
         query = f"SELECT MAX(article_date) FROM news WHERE ticker_id={ticker_id}"

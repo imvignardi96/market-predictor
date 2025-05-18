@@ -3,9 +3,8 @@ import time
 
 import pandas as pd
 import pendulum
-from airflow.decorators import dag, task
+from airflow.sdk import dag, task, Variable
 from airflow.exceptions import AirflowFailException, AirflowSkipException
-from airflow.models import Variable
 
 from utils.ibconnector import IBApi
 from utils.sqlconnector import SQLConnector
@@ -18,7 +17,7 @@ from utils.sqlconnector import SQLConnector
     catchup=False,
     max_active_tasks=5,
     max_active_runs=1,
-    schedule_interval='*/30 7-20 * * *',  # Every 30 minutes
+    schedule='*/30 7-20 * * *',  # Every 30 minutes
     doc_md=
     """
         #### Documentacion Extractor datos stocks.

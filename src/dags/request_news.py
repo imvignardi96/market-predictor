@@ -1,8 +1,6 @@
 import pendulum
-from airflow.decorators import task, dag
-from airflow.utils.dates import days_ago
-from airflow.exceptions import AirflowException, AirflowSkipException, AirflowFailException
-from airflow.models import Variable
+from airflow.sdk import task, dag, Variable
+from airflow.exceptions import AirflowSkipException
 import sys
 import os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
@@ -22,7 +20,7 @@ class Deprecated(AirflowSkipException):
     catchup=False,
     max_active_tasks=16,
     max_active_runs=1,
-    schedule_interval='*/10 * * * *',  # Every 10 minutes
+    schedule='*/10 * * * *',  # Every 10 minutes
     doc_md=
     """
         ⚠️ OBSOLETO ⚠️
