@@ -1,0 +1,16 @@
+[Unit]
+Description=Airflow scheduler daemon
+After=network.target airflow-scheduler.service
+Requires=airflow-scheduler.service
+
+[Service]
+Environment="AIRFLOW_HOME=/home/ignacio/airflow"
+Environment="PYTHONPATH=/home/ignacio/airflow"
+User=ignacio
+Type=simple
+ExecStart=/home/ignacio/.local/bin/airflow api-server
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
