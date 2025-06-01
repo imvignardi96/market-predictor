@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}  # SSH private key (must be added in GitHub secrets)
           port: 22  # Default SSH port, can be changed if needed
           script: |
-            cd /home/ignacio/market-predictor
+            cd /home/imv/market-predictor
             git fetch origin
             git reset --hard origin/prod
             git pull origin prod
@@ -34,6 +34,23 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}  # SSH private key (must be added in GitHub secrets)
           port: 22  # Default SSH port, can be changed if needed
           script: |
-            cd /home/ignacio/airflow/market-predictor
-            pip install -r requirements.txt
+            cd /home/imv/market-predictor/
+            source .venv/bin/activate
+            uv pip install -r requirements.txt
+
+      - name: Conditionally Restart Airflow
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script: |
+            cd /home/imv/market-predictor/airflow
+            if git diff --name-only HEAD~1 HEAD | grep -q '^airflow.cfg$'; then
+              echo "airflow.cfg was modified. Restarting Airflow..."
+              sudo systemctl restart airflow
+            else
+              echo "No changes in airflow.cfg. Skipping restart."
+            fi
 
