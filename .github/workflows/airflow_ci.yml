@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}  # SSH private key (must be added in GitHub secrets)
           port: 22  # Default SSH port, can be changed if needed
           script: |
-            cd /home/ignacio/airflow/market-predictor
+            cd /home/ignacio/market-predictor
             git fetch origin
             git reset --hard origin/prod
             git pull origin prod
