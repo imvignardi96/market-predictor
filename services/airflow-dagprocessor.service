@@ -1,0 +1,14 @@
+[Unit]
+Description=Airflow scheduler daemon
+
+[Service]
+Environment="AIRFLOW_HOME=/home/ignacio/airflow"
+Environment="PYTHONPATH=/home/ignacio/airflow"
+User=ignacio
+Type=simple
+ExecStart=/home/ignacio/.local/bin/airflow dag-processor
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
