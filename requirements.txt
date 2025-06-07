@@ -2,6 +2,7 @@
 apache-airflow==3.0.1 
 --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-3.0.1/constraints-3.10.txt"
 apache-airflow-providers-fab
+apache-airflow[statsd]
 
 # Others
 ibapi==9.81.1.post1
