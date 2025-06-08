@@ -1,6 +1,6 @@
 import pendulum
 import logging
-from airflow.sdk import task, dag
+from airflow.decorators import task, dag
 from airflow.exceptions import AirflowSkipException, AirflowFailException
 
 

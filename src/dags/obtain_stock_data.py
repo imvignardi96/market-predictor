@@ -1,6 +1,6 @@
 from utils.ibconnector import IBApi
 import pendulum
-from airflow.sdk import task, dag
+from airflow.decorators import task, dag
 from airflow.models.variable import Variable
 from airflow.exceptions import AirflowSkipException, AirflowFailException
 
