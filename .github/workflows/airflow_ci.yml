@@ -37,7 +37,7 @@ jobs:
             cd /home/imv/market-predictor/
             source .venv/bin/activate
             export PATH=$HOME/.local/bin:$PATH
-            uv pip install -r requirements.txt
+            uv --system pip install -r requirements.txt
 
       - name: Conditionally Restart Airflow
         uses: appleboy/ssh-action@v0.1.7
