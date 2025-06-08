@@ -1,4 +1,4 @@
-from airflow.sdk import task, dag
+from airflow.decorators import task, dag
 from airflow.providers.smtp.operators.smtp import EmailOperator
 from datetime import datetime
 
