@@ -219,7 +219,7 @@ def stock_data_dag():
         query = f"""
             SELECT 
                 *
-            FROM stock_data_daily
+            FROM stock_data_intraday
             WHERE ticker_id = {ticker_id}
                 AND (rsi IS NULL OR aroon_up IS NULL OR macd IS NULL OR obv IS NULL OR atr IS NULL or adx IS NULL)
                 AND value_at >= (
