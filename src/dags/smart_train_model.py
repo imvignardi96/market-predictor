@@ -193,11 +193,11 @@ def train_model_dag():
             
             # Features a utilizar. Se ha definido un minimo de 3 features y un maximo de 4.
             # El valor de macd es redundante, macd_hist contiene la informacion necesaria
-            features = Variable.get("model_use_features")
+            features:list = Variable.get("model_use_features")
             
             logging.info('Combinacion de features generada')
                       
-        
+            logging.info(list(stock_data.columns))
             df = stock_data[features].copy()  # Obtenemos el df con las features que queremos
             df.dropna(inplace=True) # Ahora se eliminan las filas con Nan
             
