@@ -141,7 +141,6 @@ def train_model_dag():
     )
     def generate_models(ticker_dict):
         import os
-        import ast
         import keras
         import keras_tuner as kt
         from sklearn.preprocessing import MinMaxScaler
@@ -159,12 +158,11 @@ def train_model_dag():
             file_path = ticker_dict['path']
             
             # Variables generadoras de configuracion base de modelo.
-            lookback = int(Variable.get('model_lookback'))
             predict_days = int(Variable.get('model_predict_days'))
             patience = int(Variable.get('model_patience'))
+            lookback = int(Variable.get('model_lookback'))
             
             assert predict_days>0 and predict_days<=10
-            assert lookback>0
             assert patience>1
 
             # Variables de split de datos
@@ -172,12 +170,7 @@ def train_model_dag():
             validation_scaler = float(Variable.get('model_validation_scaler'))
             
             assert train_scaler+validation_scaler<=1 and validation_scaler>0 or train_scaler>0
-            
-            # Lista de features
-            feature_combo = ast.literal_eval(Variable.get("model_feature_combo"))
-            
-            assert isinstance(feature_combo, list)
-            
+
             logging.info('Variables inicializadas')
             
             #############################################################
@@ -200,105 +193,102 @@ def train_model_dag():
             
             # Features a utilizar. Se ha definido un minimo de 3 features y un maximo de 4.
             # El valor de macd es redundante, macd_hist contiene la informacion necesaria
-            max_combinations = int(Variable.get('model_max_combinations'))
-            variable_columns = feature_combo # La tupla indica que son "una unica" feature
-            
-            assert max_combinations>0 and max_combinations<=len(variable_columns)
-            
-            base_columns = ['closing_price', 'target'] # El target se debe eliminar de X mas adelante
-            
-            # Se obtienen todas las combinaciones posibles a utilizar
-            combination_columns = mm.generate_features(variable_columns, max_combinations)
+            features = Variable.get("model_use_features")
             
             logging.info('Combinacion de features generada')
+                      
+        
+            df = stock_data[features].copy()  # Obtenemos el df con las features que queremos
+            df.dropna(inplace=True) # Ahora se eliminan las filas con Nan
             
-            for combination in combination_columns:                
-                # Obtenemos las features de la iteracion
-                features = base_columns+combination            
+            train_split = int(train_scaler * len(df))  # Training set size
+            val_split = int(validation_scaler * len(df))  # Validation set size
             
-                df = stock_data[features].copy()  # Obtenemos el df con las features que queremos
-                df.dropna(inplace=True) # Ahora se eliminan las filas con Nan
-                
-                train_split = int(train_scaler * len(df))  # Training set size
-                val_split = int(validation_scaler * len(df))  # Validation set size
-                
-                scaler = MinMaxScaler(feature_range=(0, 1))
+            scaler = MinMaxScaler(feature_range=(0, 1))
 
-                # Escalamos el dataframe y retornamos el scaler conn el fit para guardarlo posteriormente
-                df_scaled, scaler = mm.scale_dataframe(scaler, train_split, val_split, df, features)
-                
-                logging.info(f'Dataframe escalado: {df_scaled.iloc[1].values}')
-                
-                # Creamos las secuencias en funcion del numero de dias que queremos utilizar para predecir
-                X, y = mm.create_sequences(df_scaled, lookback, predict_days)
-                
-                logging.info(f'Secuencias creadas: {X[0]}')
-                
-                # Obtenemos los splits
-                X_train, X_val, X_test, y_train, y_val, y_test = mm.obtain_split(X, y, train_scaler, validation_scaler)
-                
-                logging.info(f'Datos listos: {X_train[0]}')
-                logging.info(f'Forma datos test: {X_test.shape}')
-                
-                ####################################################
-                ############## Generador de modelos ################
-                ####################################################                
-                logging.info('Generando modelo')
-                
-                # Prepare model builder function with context
-                input_shape = (X_train.shape[1], X_train.shape[2])
-                model_builder = Smart(input_shape)
+            # Escalamos el dataframe y retornamos el scaler conn el fit para guardarlo posteriormente
+            df_scaled, scaler = mm.scale_dataframe(scaler, train_split, val_split, df, features)
+            
+            logging.info(f'Dataframe escalado: {df_scaled.iloc[1].values}')
+            
+            # Creamos las secuencias en funcion del numero de dias que queremos utilizar para predecir
+            X, y = mm.create_sequences(df_scaled, lookback, predict_days)
+            
+            logging.info(f'Secuencias creadas: {X[0]}')
+            
+            # Obtenemos los splits
+            X_train, X_val, X_test, y_train, y_val, y_test = mm.obtain_split(X, y, train_scaler, validation_scaler)
+            
+            logging.info(f'Datos listos: {X_train[0]}')
+            logging.info(f'Forma datos test: {X_test.shape}')
+            
+            ####################################################
+            ############## Generador de modelos ################
+            ####################################################                
+            logging.info('Generando modelo')
+            
+            # Prepare model builder function with context
+            input_shape = (X_train.shape[1], X_train.shape[2])
+            model_builder = Smart(input_shape)
 
-                tuner = kt.RandomSearch(
-                    model_builder,
-                    objective='val_loss',
-                    max_trials=10,
-                    executions_per_trial=1,
-                    directory=os.path.join(Variable.get('model_path'), 'tuning'),
-                    project_name=f'{ticker_code.lower()}_{"_".join(combination)}'
-                )
-                
-                # Set up callbacks
-                cp_filename = f"model_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}.keras"
-                base_path = Variable.get('model_path')
-                this_model = os.path.join(base_path, f'model_{ticker_code.lower()}')
-                
-                # Create directories if not exist
-                os.makedirs(this_model, exist_ok=True)
-                cp_path = os.path.join(this_model, cp_filename)
-                
-                # Model checkpoint and early stopping
-                cp = keras.callbacks.ModelCheckpoint(cp_path, save_best_only=True, save_weights_only=False)
-                early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True)
-                
-                # Perform hyperparameter search with early stopping and model checkpoint
-                tuner.search(
-                    X_train, y_train,
-                    validation_data=(X_val, y_val),
-                    callbacks=[cp, early_stopping],
-                    verbose=2
-                )
-                
-                best_model = tuner.get_best_models(num_models=1)[0]
-                os.makedirs(this_model, exist_ok=True)
+            tuner = kt.RandomSearch(
+                model_builder,
+                objective='val_loss',
+                max_trials=10,
+                executions_per_trial=1,
+                directory=os.path.join(Variable.get('model_path'), 'tuning'),
+                project_name=f'{ticker_code.lower()}_{"_".join(features)}'
+            )
+            
+            logging.info('Tuner creado')
+            
+            # Set up callbacks
+            base_path = Variable.get('model_path')
+            this_model = os.path.join(base_path, f'model_{ticker_code.lower()}')
+            
+            # Create directories if not exist
+            os.makedirs(this_model, exist_ok=True)
 
-                bm_filename = f"best_model_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}.keras"
+            logging.info('Path disponible')
+            
+            # Model checkpoint and early stopping
+            early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, restore_best_weights=True)
+            
+            logging.info('Checkpoint y early stopper creados')
+            
+            # Perform hyperparameter search with early stopping and model checkpoint
+            tuner.search(
+                X_train, y_train,
+                validation_data=(X_val, y_val),
+                callbacks=[early_stopping],
+                verbose=2
+            )
+            
+            logging.info('Busqueda finalizada')
+            
+            best_models = tuner.get_best_models(num_models=5)
+            # best_hps = tuner.get_best_hyperparameters(num_trials=5)
+            
+            for idx, best_model in enumerate(best_models,1):
+                logging.info('Mejor modelo seleccionado')
+
+                bm_filename = f"model_{idx}_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}.keras"
                 model_file = os.path.join(this_model, bm_filename)
                 best_model.save(model_file)
                 
-                # Guardar los datos de test en la misma carpeta con la misma nomenclatura
-                x_test_filename = f"x_test_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}.npy"
-                x_path = os.path.join(this_model, x_test_filename)
-                np.save(x_path, X_test)
-                
-                y_test_filename = f"y_test_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}.npy"
-                y_path = os.path.join(this_model, y_test_filename)
-                np.save(y_path, y_test)
-                
-                # Guardar el minmax scaler
-                scaler_filename = f"scaler_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}.pkl"
-                scaler_path = os.path.join(this_model, scaler_filename)
-                joblib.dump(scaler, scaler_path)
+            # Guardar los datos de test en la misma carpeta con la misma nomenclatura
+            x_test_filename = f"x_test_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}.npy"
+            x_path = os.path.join(this_model, x_test_filename)
+            np.save(x_path, X_test)
+            
+            y_test_filename = f"y_test_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}.npy"
+            y_path = os.path.join(this_model, y_test_filename)
+            np.save(y_path, y_test)
+            
+            # Guardar el minmax scaler
+            scaler_filename = f"scaler_{ticker_code.lower()}_{'_'.join(str(feature) for feature in features)}.pkl"
+            scaler_path = os.path.join(this_model, scaler_filename)
+            joblib.dump(scaler, scaler_path)
                                                     
         except AssertionError as e:
             logging.error(f'Una o mas variables tienen un valor erroneo: {str(e)}')
@@ -344,77 +334,79 @@ def train_model_dag():
             logging.info(f'Inspeccionando directorio {os.path.join(base_path, directory)}')
             
             # Se obtiene cada archivo por separado
-            model_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.endswith('.keras')]
-            X_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('x_test')]
-            y_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('y_test')]
-            scaler_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('scaler')]
+            model_files = [file for file in os.listdir(os.path.join(base_path, directory)) if file.endswith('.keras')]
             
-            # Si se encuentran todos los archivos se procesa
-            if model_file and X_file and y_file and scaler_file:
-                try:
-                    model_file_path = os.path.join(base_path, directory, model_file[0])
-                    X_file_path = os.path.join(base_path, directory, X_file[0])
-                    y_file_path = os.path.join(base_path, directory, y_file[0])
-                    scaler_file_path = os.path.join(base_path, directory, scaler_file[0])
+            for model_file in model_files:
+                X_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('x_test')]
+                y_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('y_test')]
+                scaler_file = [file for file in os.listdir(os.path.join(base_path, directory)) if file.startswith('scaler')]
+                
+                # Si se encuentran todos los archivos se procesa
+                if X_file and y_file and scaler_file:
+                    try:
+                        model_file_path = os.path.join(base_path, directory, model_file)
+                        X_file_path = os.path.join(base_path, directory, X_file[0])
+                        y_file_path = os.path.join(base_path, directory, y_file[0])
+                        scaler_file_path = os.path.join(base_path, directory, scaler_file[0])
 
-                    
-                    # Carga mejor modelo
-                    model:keras.Sequential = keras.models.load_model(model_file_path)
-                    X_test = np.load(X_file_path)
-                    y_test = np.load(y_file_path)
-                    fitted_scaler:MinMaxScaler = joblib.load(scaler_file_path)
-                    
-                    # Predicciones del modelo
-                    y_pred = model.predict(X_test, verbose=0)    
-                    
-                    logging.info(f"Forma inicial de y: {y_test.shape}")
-                    logging.info(f"Forma del scaler: {fitted_scaler.data_max_.shape}")
-                    
-                    # Se obtiene el numero de columnas que haran falta para poder usar el scaler nuevamente
-                    n_zero_cols = fitted_scaler.scale_.shape[0] - y_test.shape[1]
-                    
-                    # Invertir transformacion agregando columnas con ceros
-                    zeros = np.zeros((y_test.shape[0], n_zero_cols))
-                    y_test_expanded = np.hstack((y_test, zeros))
-                    y_pred_expanded = np.hstack((y_pred, zeros))
-                    
-                    logging.info(f"Nueva forma de y: {y_test_expanded.shape}")
-                    
-                    # Obtencion de los valores reales
-                    y_test_real = fitted_scaler.inverse_transform(y_test_expanded)[:, 0]
-                    y_pred_real = fitted_scaler.inverse_transform(y_pred_expanded)[:, 0]
-                    
-                    logging.info('Predicciones realizadas')    
-                    
-                    # Graficado y obtencion de las metricas principales
-                    mape, direccional, r2, mse = plotter.add_plot(
-                        y_test=y_test_real,
-                        y_pred=y_pred_real,
-                        model_path=os.path.join(base_path, directory, f'{model_file[0]}.png')
-                    ) 
-                    
-                    # Cerramos la figura para evitar consumo de memoria.
-                    plotter.close_figure()
-                    
-                    # Almacenamos el mejor modelo de cada metrica
-                    if mape<curr_mape:
-                        curr_mape=mape
-                        best_models['mape']={"file":model_file[0], "result":mape}
-                    if direccional>curr_dir:
-                        curr_dir=direccional
-                        best_models['da']={"file":model_file[0], "result":direccional}
-                    if r2>curr_r2:
-                        curr_r2=r2
-                        best_models['r2']={"file":model_file[0], "result":r2}
-                    if mse<curr_mse:
-                        curr_mse=mse
-                        best_models['mse']={"file":model_file[0], "result":mse}
                         
-                except Exception as e:
-                    logging.error(f"Error en carga de modelo o creacion de predicciones: {e}")
-                    raise AirflowFailException                
-            else:
-                logging.warning('Archivos para modelo no encontrados')
+                        # Carga mejor modelo
+                        model:keras.Sequential = keras.models.load_model(model_file_path)
+                        X_test = np.load(X_file_path)
+                        y_test = np.load(y_file_path)
+                        fitted_scaler:MinMaxScaler = joblib.load(scaler_file_path)
+                        
+                        # Predicciones del modelo
+                        y_pred = model.predict(X_test, verbose=0)    
+                        
+                        logging.info(f"Forma inicial de y: {y_test.shape}")
+                        logging.info(f"Forma del scaler: {fitted_scaler.data_max_.shape}")
+                        
+                        # Se obtiene el numero de columnas que haran falta para poder usar el scaler nuevamente
+                        n_zero_cols = fitted_scaler.scale_.shape[0] - y_test.shape[1]
+                        
+                        # Invertir transformacion agregando columnas con ceros
+                        zeros = np.zeros((y_test.shape[0], n_zero_cols))
+                        y_test_expanded = np.hstack((y_test, zeros))
+                        y_pred_expanded = np.hstack((y_pred, zeros))
+                        
+                        logging.info(f"Nueva forma de y: {y_test_expanded.shape}")
+                        
+                        # Obtencion de los valores reales
+                        y_test_real = fitted_scaler.inverse_transform(y_test_expanded)[:, 0]
+                        y_pred_real = fitted_scaler.inverse_transform(y_pred_expanded)[:, 0]
+                        
+                        logging.info('Predicciones realizadas')    
+                        
+                        # Graficado y obtencion de las metricas principales
+                        mape, direccional, r2, mse = plotter.add_plot(
+                            y_test=y_test_real,
+                            y_pred=y_pred_real,
+                            model_path=os.path.join(base_path, directory, f'{model_file}.png')
+                        ) 
+                        
+                        # Cerramos la figura para evitar consumo de memoria.
+                        plotter.close_figure()
+                        
+                        # Almacenamos el mejor modelo de cada metrica
+                        if mape<curr_mape:
+                            curr_mape=mape
+                            best_models['mape']={"file":model_file, "result":mape}
+                        if direccional>curr_dir:
+                            curr_dir=direccional
+                            best_models['da']={"file":model_file, "result":direccional}
+                        if r2>curr_r2:
+                            curr_r2=r2
+                            best_models['r2']={"file":model_file, "result":r2}
+                        if mse<curr_mse:
+                            curr_mse=mse
+                            best_models['mse']={"file":model_file, "result":mse}
+                            
+                    except Exception as e:
+                        logging.error(f"Error en carga de modelo o creacion de predicciones: {e}")
+                        raise AirflowFailException                
+                else:
+                    logging.warning('Archivos para modelo no encontrados')
                 
         return best_models
                 
@@ -491,10 +483,10 @@ def train_model_dag():
     tickers = get_tickers()
     dictionary = get_data.expand(ticker=tickers)
     model_gen = generate_models.expand(ticker_dict=dictionary)
-    predictions_gen = generate_predictions()
-    send_email(predictions_gen)
+    # predictions_gen = generate_predictions()
+    # send_email(predictions_gen)
     
-    model_gen >> predictions_gen
+    # model_gen >> predictions_gen
 
 # Se instancia el dag
 model_instance = train_model_dag()
