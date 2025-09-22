@@ -8,7 +8,7 @@ Environment="AIRFLOW_HOME=/home/ignacio/airflow"
 Environment="PYTHONPATH=/home/ignacio/airflow"
 User=ignacio
 Type=simple
-ExecStart=/home/ignacio/.local/bin/airflow api-server
+ExecStart=/home/ignacio/.local/bin/airflow webserver
 Restart=always
 RestartSec=5s
 

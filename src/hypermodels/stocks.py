@@ -10,49 +10,33 @@ class Smart(keras_tuner.HyperModel):
         model = keras.Sequential()
         model.add(keras.layers.InputLayer(input_shape=self.input_shape))
 
-        # Number of layers
-        n_layers = hp.Int('num_layers', 1, 3)
-        int_activation = hp.Choice('activation', values=['relu', 'tanh', 'sigmoid'])
-        
-        # Optional recurrent dropout
-        recurrent_dropout = hp.Float('recurrent_dropout', 0.0, 0.3, step=0.1)
-        
-        # Define bidirectional option
+        # Number of layers, bidirectional and activation
+        n_layers = hp.Int('num_layers', 1, 2)
+        int_activation = hp.Choice('activation', values=['relu', 'tanh'])
         is_bidirectional = hp.Boolean('is_bidirectional')
         
         for i in range(n_layers):
-            units = hp.Int(f'units_{i}', 32, 128, step=32)
+            units = hp.Int(f'units_{i}', 32, 96, step=32)
             return_seq = i < n_layers - 1
 
             lstm_layer = keras.layers.LSTM(
                 units,
                 activation=int_activation,
                 return_sequences=return_seq,
-                recurrent_dropout=recurrent_dropout
             )
 
             if is_bidirectional:
                 model.add(keras.layers.Bidirectional(lstm_layer))
             else:
                 model.add(lstm_layer)
-                
-        # Optional batch normalization
-        if hp.Boolean('use_batchnorm'):
-            model.add(keras.layers.BatchNormalization())
-            
-        # Optional dense layer before output
-        if hp.Boolean('extra_dense'):
-            dense_units = hp.Int('dense_units', 32, 128, step=32)
-            model.add(keras.layers.Dense(dense_units, activation=int_activation))
 
         # Optional Dropout
-        dropout_rate = hp.Float('dropout_rate', 0.0, 0.3, step=0.1)
+        dropout_rate = hp.Float('dropout_rate', 0.0, 0.2, step=0.1)
         if dropout_rate > 0:
             model.add(keras.layers.Dropout(dropout_rate))
 
         # Optimizer + Learning rate
         learning_rate = hp.Float('learning_rate', 1e-4, 1e-2, sampling='log')
-
         optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
 
         # Loss function
@@ -65,13 +49,12 @@ class Smart(keras_tuner.HyperModel):
     def fit(self, hp, model, *args, **kwargs):
         # Retrieve hyperparameters passed for batch size, epochs, and callbacks
         batch_size = hp.Int('batch_size', 32, 128, step=32)  # Default batch size range
-        epochs = hp.Int('epochs', 50, 200, step=10)  # Default epochs range
 
         # Call the default Keras fit method with these dynamic parameters
         history = model.fit(
             *args, # Includes training data
             batch_size=batch_size,
-            epochs=epochs,
+            epochs=200,
             **kwargs # Includes validation an callbacks
         )
 
